@@ -1,6 +1,7 @@
 package net.mineguild.TreeDestroyage.event;
 
 
+import com.google.common.collect.Lists;
 import net.mineguild.TreeDestroyage.TreeDestroyage;
 import net.mineguild.TreeDestroyage.TreeDetector;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -12,8 +13,10 @@ import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
-import org.spongepowered.api.event.EventListener;
+import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
+import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -22,18 +25,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class BreakBlockHandler implements EventListener<ChangeBlockEvent.Break> {
+public class BreakBlockHandler {
 
 
     private TreeDestroyage plugin;
+
+    private List<ChangeBlockEvent.Break> firedEvents = Lists.newArrayList();
 
     public BreakBlockHandler(TreeDestroyage plugin) {
         this.plugin = plugin;
     }
 
-    @Override
+    @Listener
     public void handle(ChangeBlockEvent.Break breakEvent) throws Exception {
-        if (breakEvent.getCause().any(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() && breakEvent.getTransactions().size() == 1 &&
+        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().any(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() && breakEvent.getTransactions().size() == 1 &&
                 TreeDetector.isWood(breakEvent.getTransactions().get(0).getOriginal())) {
             Player cause = breakEvent.getCause().first(Player.class).get();
             Optional<ItemStack> inHand = cause.getItemInHand();
@@ -49,41 +54,49 @@ public class BreakBlockHandler implements EventListener<ChangeBlockEvent.Break> 
                     }
                 });
                 transactions.forEach(blockSnapshotTransaction -> {
+                    ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(getGame(), Cause.of(cause),
+                            cause.getWorld(), Lists.newArrayList(blockSnapshotTransaction));
+                    firedEvents.add(event);
+                    if (!getGame().getEventManager().post(event)) {
+                        if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
+                            String id = "";
+                            String damage = "";
+                            BlockState state = blockSnapshotTransaction.getOriginal().getState();
+                            Object trait = state.getTraitValues().toArray()[1];
+                            Location loc = blockSnapshotTransaction.getOriginal().getLocation().get();
 
-                    if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
-                        String id = "";
-                        String damage = "";
-                        BlockState state = blockSnapshotTransaction.getOriginal().getState();
-                        Object trait = state.getTraitValues().toArray()[1];
-                        Location loc = blockSnapshotTransaction.getOriginal().getLocation().get();
+                            if (state.getType() == BlockTypes.LOG) {
+                                id = "minecraft:log";
+                                if (trait.toString().equalsIgnoreCase("oak")) {
+                                    damage = "0";
+                                } else if (trait.toString().equalsIgnoreCase("spruce")) {
+                                    damage = "1";
+                                } else if (trait.toString().equalsIgnoreCase("birch")) {
+                                    damage = "2";
+                                } else if (trait.toString().equalsIgnoreCase("jungle")) {
+                                    damage = "3";
+                                }
+                            } else if (state.getType() == BlockTypes.LOG2) {
+                                id = "minecraft:log2";
+                                if (trait.toString().equalsIgnoreCase("acacia")) {
+                                    damage = "0";
+                                } else if (trait.toString().equalsIgnoreCase("dark_oak")) {
+                                    damage = "1";
+                                }
+                            }
 
-                        if (state.getType() == BlockTypes.LOG) {
-                            id = "minecraft:log";
-                            if (trait.toString().equalsIgnoreCase("oak")) {
-                                damage = "0";
-                            } else if (trait.toString().equalsIgnoreCase("spruce")) {
-                                damage = "1";
-                            } else if (trait.toString().equalsIgnoreCase("birch")) {
-                                damage = "2";
-                            } else if (trait.toString().equalsIgnoreCase("jungle")) {
-                                damage = "3";
-                            }
-                        } else if (state.getType() == BlockTypes.LOG2) {
-                            id = "minecraft:log2";
-                            if (trait.toString().equalsIgnoreCase("acacia")) {
-                                damage = "0";
-                            } else if (trait.toString().equalsIgnoreCase("dark_oak")) {
-                                damage = "1";
-                            }
+                            getGame().getCommandDispatcher().process(getGame().getServer().getConsole()
+                                    , String.format("summon Item %d %d %d {Item:{id:%s, Damage:%s,Count:%d}}",
+                                    loc.getBlockPosition().getX(), loc.getBlockPosition().getY(), loc.getBlockPosition().getZ(), id, damage, 1));
                         }
-
-                        getGame().getCommandDispatcher().process(getGame().getServer().getConsole()
-                                , String.format("summon Item %d %d %d {Item:{id:%s, Damage:%s,Count:%d}}",
-                                loc.getBlockPosition().getX(), loc.getBlockPosition().getY(), loc.getBlockPosition().getZ(), id, damage, 1));
+                        blockSnapshotTransaction.getFinal().restore(true, true);
+                    } else {
+                        // Event got canceled
+                        System.out.println("Event canceled.");
                     }
-                    blockSnapshotTransaction.getFinal().restore(true, true);
 
                 });
+                firedEvents.clear();
             }
         }
     }

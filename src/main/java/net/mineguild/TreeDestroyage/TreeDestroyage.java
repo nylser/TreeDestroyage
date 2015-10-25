@@ -8,7 +8,6 @@ import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartingServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
@@ -52,7 +51,7 @@ public class TreeDestroyage {
 
     @Listener
     public void onInitialization(GameInitializationEvent event) {
-        event.getGame().getEventManager().registerListener(this, ChangeBlockEvent.Break.class, new BreakBlockHandler(this));
+        event.getGame().getEventManager().registerListeners(this, new BreakBlockHandler(this));
 
         CommandSpec setSpec = CommandSpec.builder().arguments(string(Texts.of("setting")), optional(firstParsing(bool(Texts.of("value")), integer(Texts.of("value")), catalogedElement(Texts.of("value"), game, ItemType.class)))).description(Texts.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
                 .permission("TreeDestroyage.set").build();
