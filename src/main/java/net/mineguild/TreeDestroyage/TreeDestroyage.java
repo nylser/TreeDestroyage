@@ -25,7 +25,7 @@ import java.util.Optional;
 
 import static org.spongepowered.api.util.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.1")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.2b")
 public class TreeDestroyage {
 
     @Inject

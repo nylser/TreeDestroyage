@@ -1,5 +1,11 @@
 group 'mineguild.net'
-version '0.2'
+//version '0.2'
+
+ext.versionCode = System.getenv("BUILD_NUMBER") as Integer ?: 0
+ext.versionName = "0.2b"
+
+version "${versionName}-${versionCode}"
+
 
 apply plugin: 'java'
 
@@ -17,3 +23,32 @@ dependencies {
     compile 'org.spongepowered:spongeapi:2.1-SNAPSHOT'
 }
 
+// jar {
+// 	include '**/*.class'
+// 	filter(ReplaceTokens, tokens: ['$version': "${project.version}"])
+// }
+//
+//
+// def filteredSourceDir = file("${buildDir}/filtered")
+//
+// sourceSets {
+//     // This source set will contain all sources that we filter
+//     filtered {
+//         java {
+//             srcDirs = [filteredSourceDir]
+//         }
+//     }
+// }
+//
+// // tell the compileJava task to compile the filtered source
+// compileJava.source = sourceSets.filtered.java
+//
+//
+// // copy the main sources and filter any '$version' occurences.
+// task processVersion (type: Copy) {
+//     from sourceSets.main.java
+//     into filteredSourceDir
+//     expand('$version': "${project.version}")
+// }
+//
+// //compileJava.dependsOn processVersion
