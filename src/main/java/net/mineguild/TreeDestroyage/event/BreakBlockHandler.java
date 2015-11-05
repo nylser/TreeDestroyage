@@ -11,13 +11,18 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.type.TreeTypes;
+import org.spongepowered.api.entity.Entity;
+import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackBuilder;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -59,35 +64,33 @@ public class BreakBlockHandler {
                     firedEvents.add(event);
                     if (!getGame().getEventManager().post(event)) {
                         if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
-                            String id = "";
-                            String damage = "";
                             BlockState state = blockSnapshotTransaction.getOriginal().getState();
                             Object trait = state.getTraitValues().toArray()[1];
-                            Location loc = blockSnapshotTransaction.getOriginal().getLocation().get();
-
+                            final ItemStackBuilder builder = getGame().getRegistry().createItemBuilder();
+                            ItemStack itemStack = null;
                             if (state.getType() == BlockTypes.LOG) {
-                                id = "minecraft:log";
+                                itemStack = builder.itemType(ItemTypes.LOG).build();
                                 if (trait.toString().equalsIgnoreCase("oak")) {
-                                    damage = "0";
+                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.OAK);
                                 } else if (trait.toString().equalsIgnoreCase("spruce")) {
-                                    damage = "1";
+                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.SPRUCE);
                                 } else if (trait.toString().equalsIgnoreCase("birch")) {
-                                    damage = "2";
+                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.BIRCH);
                                 } else if (trait.toString().equalsIgnoreCase("jungle")) {
-                                    damage = "3";
+                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.JUNGLE);
                                 }
                             } else if (state.getType() == BlockTypes.LOG2) {
-                                id = "minecraft:log2";
+                                itemStack = builder.itemType(ItemTypes.LOG2).build();
                                 if (trait.toString().equalsIgnoreCase("acacia")) {
-                                    damage = "0";
+                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.ACACIA);
                                 } else if (trait.toString().equalsIgnoreCase("dark_oak")) {
-                                    damage = "1";
+                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.DARK_OAK);
                                 }
                             }
+                            Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
+                            entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
+                            cause.getWorld().spawnEntity(entity, Cause.of(plugin));
 
-                            getGame().getCommandDispatcher().process(getGame().getServer().getConsole()
-                                    , String.format("summon Item %d %d %d {Item:{id:%s, Damage:%s,Count:%d}}",
-                                    loc.getBlockPosition().getX(), loc.getBlockPosition().getY(), loc.getBlockPosition().getZ(), id, damage, 1));
                         }
                         blockSnapshotTransaction.getFinal().restore(true, true);
                     } else {
