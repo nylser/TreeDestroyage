@@ -7,6 +7,9 @@ import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
+import org.spongepowered.api.command.CommandResult;
+import org.spongepowered.api.command.spec.CommandSpec;
+import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartingServerEvent;
@@ -14,18 +17,15 @@ import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
-import org.spongepowered.api.service.config.DefaultConfig;
 import org.spongepowered.api.text.Texts;
-import org.spongepowered.api.util.command.CommandResult;
-import org.spongepowered.api.util.command.spec.CommandSpec;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.spongepowered.api.util.command.args.GenericArguments.*;
+import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.3")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.4")
 public class TreeDestroyage {
 
     @Inject
@@ -69,7 +69,7 @@ public class TreeDestroyage {
                 }
         ).permission("TreeDestroyage.reload").build();
         CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").child(reloadSpec, "reload").build();
-        event.getGame().getCommandDispatcher().register(this, mainSpec, "treedestroyage");
+        event.getGame().getCommandManager().register(this, mainSpec, "treedestroyage");
 
     }
 
