@@ -17,7 +17,7 @@ import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.Optional;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.4")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.5")
 public class TreeDestroyage {
 
     @Inject
@@ -51,25 +51,25 @@ public class TreeDestroyage {
 
     @Listener
     public void onInitialization(GameInitializationEvent event) {
-        event.getGame().getEventManager().registerListeners(this, new BreakBlockHandler(this));
+        game.getEventManager().registerListeners(this, new BreakBlockHandler(this));
 
-        CommandSpec setSpec = CommandSpec.builder().arguments(string(Texts.of("setting")), optional(firstParsing(bool(Texts.of("value")), integer(Texts.of("value")), catalogedElement(Texts.of("value"), game, ItemType.class)))).description(Texts.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
+        CommandSpec setSpec = CommandSpec.builder().arguments(string(Text.of("setting")), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
                 .permission("TreeDestroyage.set").build();
 
         CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
                     try {
                         config = configManager.load();
-                        src.sendMessage(Texts.of("Config reloaded!"));
+                        src.sendMessage(Text.of("Config reloaded!"));
                         return CommandResult.success();
                     } catch (IOException e) {
-                        src.sendMessage(Texts.of("Config couldn't be reloaded!"));
+                        src.sendMessage(Text.of("Config couldn't be reloaded!"));
                         getLogger().error("Couldn't re-load config", e);
                         return CommandResult.empty();
                     }
                 }
         ).permission("TreeDestroyage.reload").build();
         CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").child(reloadSpec, "reload").build();
-        event.getGame().getCommandManager().register(this, mainSpec, "treedestroyage");
+        game.getCommandManager().register(this, mainSpec, "treedestroyage");
 
     }
 

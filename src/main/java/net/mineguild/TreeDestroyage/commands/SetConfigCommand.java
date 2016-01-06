@@ -9,7 +9,7 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.text.Texts;
+import org.spongepowered.api.text.Text;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -28,7 +28,7 @@ public class SetConfigCommand implements CommandExecutor {
         String setting = (String) args.getOne("setting").get();
         Optional<Object> value = args.getOne("value");
         if (plugin.getConfig().getNode(setting).isVirtual() || setting.equals("version")) {
-            src.sendMessage(Texts.of("Invalid value!"));
+            src.sendMessage(Text.of("Invalid value!"));
             return CommandResult.empty();
         } else {
             if (setting.equals("item") && !value.isPresent() && src instanceof Player) {
@@ -36,19 +36,19 @@ public class SetConfigCommand implements CommandExecutor {
                 Optional<ItemStack> item = p.getItemInHand();
                 if (item.isPresent()) {
                     plugin.getConfig().getNode(setting).setValue(item.get().getItem().getName());
-                    src.sendMessage(Texts.of("Item was changed to ", item.get().getItem().getName()));
+                    src.sendMessage(Text.of("Item was changed to ", item.get().getItem().getName()));
                     return CommandResult.success();
                 } else {
-                    src.sendMessage(Texts.of("No item in hand!"));
+                    src.sendMessage(Text.of("No item in hand!"));
                 }
             } else if (setting.equals("item") && value.isPresent()) {
                 ItemType item = (ItemType) value.get();
                 plugin.getConfig().getNode(setting).setValue(item.getName());
-                src.sendMessage(Texts.of("Item was successfully changed to ", item.getName()));
+                src.sendMessage(Text.of("Item was successfully changed to ", item.getName()));
             } else if (value.isPresent()) {
                 if (plugin.getConfig().getNode(setting).getValue().getClass().equals(value.get().getClass())) {
                     plugin.getConfig().getNode(setting).setValue(value.get());
-                    src.sendMessage(Texts.of(setting, " succesfully changed to ", value.get()));
+                    src.sendMessage(Text.of(setting, " succesfully changed to ", value.get()));
                     try {
                         plugin.getConfigManager().save(plugin.getConfig());
                     } catch (IOException e) {
@@ -56,7 +56,7 @@ public class SetConfigCommand implements CommandExecutor {
                     }
                     return CommandResult.success();
                 } else {
-                    src.sendMessage(Texts.of("Value of wrong type!"));
+                    src.sendMessage(Text.of("Value of wrong type!"));
                 }
             }
         }
