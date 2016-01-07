@@ -42,7 +42,7 @@ public class BreakBlockHandler {
 
     @Listener
     public void handle(ChangeBlockEvent.Break breakEvent) throws Exception {
-        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().contains(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() && breakEvent.getTransactions().size() == 1 &&
+        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() && breakEvent.getTransactions().size() == 1 &&
                 TreeDetector.isWood(breakEvent.getTransactions().get(0).getOriginal())) {
             Player cause = breakEvent.getCause().first(Player.class).get();
             Optional<ItemStack> inHand = cause.getItemInHand();

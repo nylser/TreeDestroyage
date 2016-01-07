@@ -7,6 +7,7 @@ import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.DefaultConfig;
@@ -25,7 +26,7 @@ import java.util.Optional;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.5")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.5a")
 public class TreeDestroyage {
 
     @Inject
@@ -51,7 +52,7 @@ public class TreeDestroyage {
 
     @Listener
     public void onInitialization(GameInitializationEvent event) {
-        game.getEventManager().registerListeners(this, new BreakBlockHandler(this));
+        Sponge.getGame().getEventManager().registerListeners(this, new BreakBlockHandler(this));
 
         CommandSpec setSpec = CommandSpec.builder().arguments(string(Text.of("setting")), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
                 .permission("TreeDestroyage.set").build();
