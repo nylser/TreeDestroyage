@@ -16,7 +16,6 @@ public class TreeDetector {
     private ConfigurationNode config;
     private Set<BlockSnapshot> woodSnaps = null;
     private Set<Vector3d> locations = new HashSet<>();
-    private BlockTrait<?> woodVariant;
     private Comparable variant;
     private boolean inExtended = false;
 
@@ -28,7 +27,6 @@ public class TreeDetector {
             throw new RuntimeException("Starting block has to be wood!");
 
         } else {
-            woodVariant = startBlock.getState().getTrait("variant").get();
             variant = (Comparable) startBlock.getState().getTraitValues().toArray()[1];
         }
     }

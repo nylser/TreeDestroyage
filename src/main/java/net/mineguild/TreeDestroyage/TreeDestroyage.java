@@ -1,10 +1,14 @@
 package net.mineguild.TreeDestroyage;
 
+import com.google.common.collect.Lists;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import net.mineguild.TreeDestroyage.commands.SetConfigCommand;
 import net.mineguild.TreeDestroyage.event.BreakBlockHandler;
+import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
@@ -22,11 +26,13 @@ import org.spongepowered.api.text.Text;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.5a")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.6")
 public class TreeDestroyage {
 
     @Inject
@@ -71,7 +77,6 @@ public class TreeDestroyage {
         ).permission("TreeDestroyage.reload").build();
         CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").child(reloadSpec, "reload").build();
         game.getCommandManager().register(this, mainSpec, "treedestroyage");
-
     }
 
     @Listener
@@ -79,35 +84,49 @@ public class TreeDestroyage {
         config = null;
         try {
             if (!defaultConfig.exists()) {
-                defaultConfig.createNewFile();
+                if (!defaultConfig.createNewFile()) {
+                    throw new RuntimeException("Unable to create configuration file!");
+                }
                 config = configManager.load();
                 config.getNode("version").setValue(1);
                 configManager.save(config);
             }
             config = configManager.load();
+
             //Migrations here
-            switch (config.getNode("version").getInt()) {
+            ConfigurationNode versionNode = config.getNode("version");
+            switch (versionNode.getInt()) {
                 case 1:
-                    getLogger().info("Migrating from config version 1 to 2");
+                    getLogger().info(String.format("Migrating from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
                     config.getNode("enabled").setComment("Enable/disable this plugin functionality").setValue(true);
                     config.getNode("maxBlocks").setComment("Maximum amount of blocks that will be destroyed in one hit").setValue(200);
-                    config.getNode("version").setValue(2);
+                    versionNode.setValue(versionNode.getInt() + 1);
                 case 2:
-                    getLogger().info("Migrating from config version 2 to 3");
+                    getLogger().info(String.format("Migrating from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
                     config.getNode("item").setComment("The item that needs to be held.").setValue("minecraft:golden_axe");
                     config.getNode("consumeItem").setComment("Whether to consume the item after usage. NOT WORKING YET").setValue(false);
-                    config.getNode("version").setValue(3);
+                    versionNode.setValue(versionNode.getInt() + 1);
+                case 3:
+                    getLogger().info(String.format("Migrating from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
+                    List<String> items = new ArrayList<>();
+                    items.add(config.getNode("item").getString());
+                    config.getNode("items").setComment("List of items that can be used as axe").setValue(items);
+                    config.removeChild("item");
+                    versionNode.setValue(versionNode.getInt() + 1);
             }
 
             //Validation checks here
-            Optional<ItemType> type = game.getRegistry().getType(ItemType.class, config.getNode("item").getString());
-            if (!type.isPresent()) {
-                getLogger().warn("ItemType item is not present! Resetting");
-                config.getNode("item").setValue("minecraft:golden_axe");
-            }
+            List<String> items = config.getNode("items").getList(TypeToken.of(String.class));
+            List<String> newItems = Lists.newArrayList(items);
+            List<String> toRemove = new ArrayList<>();
+            items.stream().filter(id -> !game.getRegistry().getType(ItemType.class, id).isPresent()).forEach(toRemove::add);
+            toRemove.forEach(newItems::remove);
+            config.getNode("items").setValue(newItems);
             configManager.save(config);
         } catch (IOException e) {
             getLogger().error("Unable to load/create config!", e);
+        } catch (ObjectMappingException e) {
+            e.printStackTrace();
         }
     }
 

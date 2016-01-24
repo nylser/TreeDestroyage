@@ -2,6 +2,7 @@ package net.mineguild.TreeDestroyage.event;
 
 
 import com.google.common.collect.Lists;
+import com.google.common.reflect.TypeToken;
 import net.mineguild.TreeDestroyage.TreeDestroyage;
 import net.mineguild.TreeDestroyage.TreeDetector;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -30,8 +31,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class BreakBlockHandler {
-
-
+    
     private TreeDestroyage plugin;
 
     private List<ChangeBlockEvent.Break> firedEvents = Lists.newArrayList();
@@ -46,16 +46,15 @@ public class BreakBlockHandler {
                 TreeDetector.isWood(breakEvent.getTransactions().get(0).getOriginal())) {
             Player cause = breakEvent.getCause().first(Player.class).get();
             Optional<ItemStack> inHand = cause.getItemInHand();
-            if (inHand.isPresent() && inHand.get().getItem().getName().equals(getConfig().getNode("item").getString()) && cause.hasPermission("TreeDestroyage.destroy")) {
+            List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
+            if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && cause.hasPermission("TreeDestroyage.destroy")) {
                 TreeDetector dec = new TreeDetector(breakEvent.getTransactions().get(0).getOriginal(), getConfig());
                 List<Transaction<BlockSnapshot>> transactions = new ArrayList<>(dec.getWoodLocations().size());
-                dec.getWoodLocations().forEach(blockSnapshot -> {
-                    if (!blockSnapshot.equals(breakEvent.getTransactions().get(0).getOriginal())) {
-                        BlockState newState = BlockTypes.AIR.getDefaultState();
-                        BlockSnapshot newSnapshot = blockSnapshot.withState(newState).withLocation(new Location<World>(cause.getWorld(), blockSnapshot.getPosition()));
-                        Transaction<BlockSnapshot> t = new Transaction<>(blockSnapshot, newSnapshot);
-                        transactions.add(t);
-                    }
+                dec.getWoodLocations().stream().filter(snapshot -> !snapshot.equals(breakEvent.getTransactions().get(0).getOriginal())).forEach(blockSnapshot -> {
+                    BlockState newState = BlockTypes.AIR.getDefaultState();
+                    BlockSnapshot newSnapshot = blockSnapshot.withState(newState).withLocation(new Location<World>(cause.getWorld(), blockSnapshot.getPosition()));
+                    Transaction<BlockSnapshot> t = new Transaction<>(blockSnapshot, newSnapshot);
+                    transactions.add(t);
                 });
                 transactions.forEach(blockSnapshotTransaction -> {
                     ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(Cause.of(cause),
@@ -64,32 +63,11 @@ public class BreakBlockHandler {
                     if (!getGame().getEventManager().post(event)) {
                         if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
                             BlockState state = blockSnapshotTransaction.getOriginal().getState();
-                            Object trait = state.getTraitValues().toArray()[1];
                             ItemStack.Builder builder = getGame().getRegistry().createBuilder(ItemStack.Builder.class);
-                            ItemStack itemStack = null;
-                            if (state.getType() == BlockTypes.LOG) {
-                                itemStack = builder.itemType(ItemTypes.LOG).build();
-                                if (trait.toString().equalsIgnoreCase("oak")) {
-                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.OAK);
-                                } else if (trait.toString().equalsIgnoreCase("spruce")) {
-                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.SPRUCE);
-                                } else if (trait.toString().equalsIgnoreCase("birch")) {
-                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.BIRCH);
-                                } else if (trait.toString().equalsIgnoreCase("jungle")) {
-                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.JUNGLE);
-                                }
-                            } else if (state.getType() == BlockTypes.LOG2) {
-                                itemStack = builder.itemType(ItemTypes.LOG2).build();
-                                if (trait.toString().equalsIgnoreCase("acacia")) {
-                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.ACACIA);
-                                } else if (trait.toString().equalsIgnoreCase("dark_oak")) {
-                                    itemStack.offer(Keys.TREE_TYPE, TreeTypes.DARK_OAK);
-                                }
-                            }
+                            ItemStack itemStack = builder.fromBlockState(state).build();
                             Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
                             cause.getWorld().spawnEntity(entity, Cause.of(plugin));
-
                         }
                         blockSnapshotTransaction.getFinal().restore(true, true);
                     } else {
@@ -103,11 +81,11 @@ public class BreakBlockHandler {
         }
     }
 
-    private ConfigurationNode getConfig(){
+    private ConfigurationNode getConfig() {
         return plugin.getConfig();
     }
 
-    private Game getGame(){
+    private Game getGame() {
         return plugin.getGame();
     }
 }

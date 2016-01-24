@@ -1,17 +1,24 @@
 package net.mineguild.TreeDestroyage.commands;
 
+import com.google.common.collect.Lists;
+import com.google.common.reflect.TypeToken;
 import net.mineguild.TreeDestroyage.TreeDestroyage;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.data.translator.ConfigurateTranslator;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.util.persistence.DataSource;
+import org.spongepowered.api.util.persistence.DataSourceFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @SuppressWarnings("NullableProblems")
@@ -35,8 +42,19 @@ public class SetConfigCommand implements CommandExecutor {
                 Player p = (Player) src;
                 Optional<ItemStack> item = p.getItemInHand();
                 if (item.isPresent()) {
-                    plugin.getConfig().getNode(setting).setValue(item.get().getItem().getName());
-                    src.sendMessage(Text.of("Item was changed to ", item.get().getItem().getName()));
+                    try {
+                        List<String> items = plugin.getConfig().getNode("items").getList(TypeToken.of(String.class));
+                        if (!items.contains(item.get().getItem().getName())) {
+                            List<String> newItems = Lists.newArrayList(items);
+                            newItems.add(item.get().getItem().getName());
+                            plugin.getConfig().getNode("items").setValue(newItems);
+                            src.sendMessage(Text.of(item.get().getItem().getName(), " added to items"));
+                        } else {
+                            src.sendMessage(Text.of("Already in list!"));
+                        }
+                    } catch (ObjectMappingException e) {
+                        e.printStackTrace();
+                    }
                     return CommandResult.success();
                 } else {
                     src.sendMessage(Text.of("No item in hand!"));
