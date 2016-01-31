@@ -80,7 +80,10 @@ public class BreakBlockHandler {
                             Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
                             cause.getWorld().spawnEntity(entity, Cause.of(cause));
-
+                            if (item.supports(Keys.ITEM_DURABILITY)) {
+                                item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get()-1);
+                                cause.setItemInHand(item);
+                            }
                         }
                         blockSnapshotTransaction.getFinal().restore(true, true);
                     } else {
@@ -90,16 +93,6 @@ public class BreakBlockHandler {
 
                 });
                 firedEvents.clear();
-                if (item.supports(Keys.ITEM_DURABILITY)) {
-                    cause.getInventory().query(Hotbar.class).forEach(invItem -> {
-                        if (invItem.equals(item)) {
-                            item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get() - transactions.size());
-                            plugin.getLogger().info(invItem.set(item).toString());
-
-                        }
-                    });
-                }
-
             }
         }
     }
