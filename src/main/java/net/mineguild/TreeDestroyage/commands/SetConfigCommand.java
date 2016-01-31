@@ -17,6 +17,7 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.util.persistence.DataSource;
 import org.spongepowered.api.util.persistence.DataSourceFactory;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +62,17 @@ public class SetConfigCommand implements CommandExecutor {
                 }
             } else if (setting.equals("item") && value.isPresent()) {
                 ItemType item = (ItemType) value.get();
-                plugin.getConfig().getNode(setting).setValue(item.getName());
+                try {
+                    List<String> items = Lists.newArrayList(plugin.getConfig().getNode("items").getList(TypeToken.of(String.class)));
+                    if(!items.contains(item.getName())){
+                        items.add(item.getName());
+                        src.sendMessage(Text.of(item.getName(), " was added to the accepted list!"));
+                    } else {
+                        src.sendMessage(Text.of(item.getName(), " already on accepted list!"));
+                    }
+                } catch (ObjectMappingException e) {
+                    e.printStackTrace();
+                }
                 src.sendMessage(Text.of("Item was successfully changed to ", item.getName()));
             } else if (value.isPresent()) {
                 if (plugin.getConfig().getNode(setting).getValue().getClass().equals(value.get().getClass())) {

@@ -32,7 +32,7 @@ import java.util.Optional;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.6")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.6-DEV")
 public class TreeDestroyage {
 
     @Inject

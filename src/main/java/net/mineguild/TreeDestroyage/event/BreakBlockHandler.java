@@ -23,6 +23,8 @@ import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.entity.Hotbar;
+import org.spongepowered.api.item.inventory.equipment.EquipmentTypes;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -31,7 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class BreakBlockHandler {
-    
+
     private TreeDestroyage plugin;
 
     private List<ChangeBlockEvent.Break> firedEvents = Lists.newArrayList();
@@ -48,7 +50,17 @@ public class BreakBlockHandler {
             Optional<ItemStack> inHand = cause.getItemInHand();
             List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
             if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && cause.hasPermission("TreeDestroyage.destroy")) {
-                TreeDetector dec = new TreeDetector(breakEvent.getTransactions().get(0).getOriginal(), getConfig());
+                ItemStack item = inHand.get();
+                int maxAmount = 0; // 0 for unlimited
+                if (item.get(Keys.ITEM_DURABILITY).isPresent()) {
+                    int durability = item.get(Keys.ITEM_DURABILITY).get();
+                    maxAmount = durability + 1; // Because durability=0 is the last hit
+                    if (durability == 0) {
+                        plugin.getLogger().info("Cancelling here, durability is 0");
+                        return;
+                    }
+                }
+                TreeDetector dec = new TreeDetector(breakEvent.getTransactions().get(0).getOriginal(), maxAmount, getConfig());
                 List<Transaction<BlockSnapshot>> transactions = new ArrayList<>(dec.getWoodLocations().size());
                 dec.getWoodLocations().stream().filter(snapshot -> !snapshot.equals(breakEvent.getTransactions().get(0).getOriginal())).forEach(blockSnapshot -> {
                     BlockState newState = BlockTypes.AIR.getDefaultState();
@@ -67,7 +79,8 @@ public class BreakBlockHandler {
                             ItemStack itemStack = builder.fromBlockState(state).build();
                             Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
-                            cause.getWorld().spawnEntity(entity, Cause.of(plugin));
+                            cause.getWorld().spawnEntity(entity, Cause.of(cause));
+
                         }
                         blockSnapshotTransaction.getFinal().restore(true, true);
                     } else {
@@ -77,6 +90,16 @@ public class BreakBlockHandler {
 
                 });
                 firedEvents.clear();
+                if (item.supports(Keys.ITEM_DURABILITY)) {
+                    cause.getInventory().query(Hotbar.class).forEach(invItem -> {
+                        if (invItem.equals(item)) {
+                            item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get() - transactions.size());
+                            plugin.getLogger().info(invItem.set(item).toString());
+
+                        }
+                    });
+                }
+
             }
         }
     }

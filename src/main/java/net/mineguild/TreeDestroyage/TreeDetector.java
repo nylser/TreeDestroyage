@@ -13,6 +13,7 @@ import java.util.Set;
 public class TreeDetector {
 
     private BlockSnapshot startBlock;
+    private int maxAmount;
     private ConfigurationNode config;
     private Set<BlockSnapshot> woodSnaps = null;
     private Set<Vector3d> locations = new HashSet<>();
@@ -20,8 +21,9 @@ public class TreeDetector {
     private boolean inExtended = false;
 
 
-    public TreeDetector(BlockSnapshot startBlock, ConfigurationNode config) {
+    public TreeDetector(BlockSnapshot startBlock, int maxAmount, ConfigurationNode config) {
         this.startBlock = startBlock;
+        this.maxAmount = maxAmount;
         this.config = config;
         if (!(startBlock.getState().getType() == BlockTypes.LOG || startBlock.getState().getType() == BlockTypes.LOG2)) {
             throw new RuntimeException("Starting block has to be wood!");
@@ -44,7 +46,7 @@ public class TreeDetector {
     }
 
     private void getWoodLocations(BlockSnapshot startBlock) {
-        if (woodSnaps.size() < config.getNode("maxBlocks").getInt(200) && isWood(startBlock)) {
+        if (woodSnaps.size() < config.getNode("maxBlocks").getInt(200) && woodSnaps.size() < maxAmount && isWood(startBlock)) {
             if ((startBlock.getState().getTraitValues().toArray()[1]).equals(variant)) {
                 inExtended = false;
                 woodSnaps.add(startBlock);
