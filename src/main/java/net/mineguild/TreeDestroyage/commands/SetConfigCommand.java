@@ -9,6 +9,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.data.DataContainer;
 import org.spongepowered.api.data.translator.ConfigurateTranslator;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
@@ -77,7 +78,7 @@ public class SetConfigCommand implements CommandExecutor {
             } else if (value.isPresent()) {
                 if (plugin.getConfig().getNode(setting).getValue().getClass().equals(value.get().getClass())) {
                     plugin.getConfig().getNode(setting).setValue(value.get());
-                    src.sendMessage(Text.of(setting, " succesfully changed to ", value.get()));
+                    src.sendMessage(Text.of(setting, " successfully changed to ", value.get()));
                     try {
                         plugin.getConfigManager().save(plugin.getConfig());
                     } catch (IOException e) {

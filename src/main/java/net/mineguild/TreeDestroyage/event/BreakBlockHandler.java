@@ -15,6 +15,7 @@ import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.TreeTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
+import org.spongepowered.api.entity.Item;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
@@ -54,7 +55,7 @@ public class BreakBlockHandler {
                 int maxAmount = 0; // 0 for unlimited
                 if (item.get(Keys.ITEM_DURABILITY).isPresent()) {
                     int durability = item.get(Keys.ITEM_DURABILITY).get();
-                    maxAmount = durability + 1; // Because durability=0 is the last hit
+                    maxAmount = durability + 2; // Because durability=0 is the last hit
                     if (durability == 0) {
                         plugin.getLogger().info("Cancelling here, durability is 0");
                         return;
@@ -81,8 +82,13 @@ public class BreakBlockHandler {
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
                             cause.getWorld().spawnEntity(entity, Cause.of(cause));
                             if (item.supports(Keys.ITEM_DURABILITY)) {
-                                item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get()-1);
-                                cause.setItemInHand(item);
+                                if(item.get(Keys.ITEM_DURABILITY).get() == 0){
+                                    cause.setItemInHand(null);
+                                } else {
+                                    plugin.getLogger().info(item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get() - 1).toString());
+
+                                    cause.setItemInHand(item);
+                                }
                             }
                         }
                         blockSnapshotTransaction.getFinal().restore(true, true);
