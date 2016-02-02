@@ -77,7 +77,7 @@ public class BreakBlockHandler {
                         if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
                             BlockState state = blockSnapshotTransaction.getOriginal().getState();
                             ItemStack.Builder builder = getGame().getRegistry().createBuilder(ItemStack.Builder.class);
-                            ItemStack itemStack = builder.fromBlockState(state).build();
+                            ItemStack itemStack = builder.fromBlockState(state.getType().getDefaultState()).build();
                             Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
                             cause.getWorld().spawnEntity(entity, Cause.of(cause));
