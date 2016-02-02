@@ -9,6 +9,7 @@ import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
+import org.mcstats.Metrics;
 import org.slf4j.Logger;
 import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
@@ -58,6 +59,12 @@ public class TreeDestroyage {
 
     @Listener
     public void onInitialization(GameInitializationEvent event) {
+        try {
+            Metrics m = new Metrics(Sponge.getGame(), container);
+            m.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Sponge.getGame().getEventManager().registerListeners(this, new BreakBlockHandler(this));
 
         CommandSpec setSpec = CommandSpec.builder().arguments(string(Text.of("setting")), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
