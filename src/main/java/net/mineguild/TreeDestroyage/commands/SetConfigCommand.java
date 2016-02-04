@@ -9,16 +9,13 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
-import org.spongepowered.api.data.DataContainer;
-import org.spongepowered.api.data.translator.ConfigurateTranslator;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.util.persistence.DataSource;
-import org.spongepowered.api.util.persistence.DataSourceFactory;
+import org.spongepowered.api.text.action.TextActions;
+import org.spongepowered.api.text.format.TextColors;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +33,7 @@ public class SetConfigCommand implements CommandExecutor {
     public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
         String setting = (String) args.getOne("setting").get();
         Optional<Object> value = args.getOne("value");
-        if (plugin.getConfig().getNode(setting).isVirtual() || setting.equals("version")) {
+        if ((plugin.getConfig().getNode(setting).isVirtual() && !setting.equals("item")) || setting.equals("version")) {
             src.sendMessage(Text.of("Invalid value!"));
             return CommandResult.empty();
         } else {
@@ -52,7 +49,18 @@ public class SetConfigCommand implements CommandExecutor {
                             plugin.getConfig().getNode("items").setValue(newItems);
                             src.sendMessage(Text.of(item.get().getItem().getName(), " added to items"));
                         } else {
-                            src.sendMessage(Text.of("Already in list!"));
+                            src.sendMessage(Text.of("Already in list! ", Text.of(TextColors.RED, "[Remove]").toBuilder().onClick(TextActions.executeCallback(commandSource -> {
+                                try {
+                                    List<String> itemsNew = Lists.newArrayList(plugin.getConfig().getNode("items").getList(TypeToken.of(String.class)));
+                                    if (itemsNew.contains(item.get().getItem().getName())) {
+                                        itemsNew.remove(item.get().getItem().getName());
+                                    }
+                                    plugin.getConfig().getNode("items").setValue(itemsNew);
+                                    src.sendMessage(Text.of(item.get().getItem().getName(), " removed from items"));
+                                } catch (ObjectMappingException e) {
+                                    e.printStackTrace();
+                                }
+                            })).build()));
                         }
                     } catch (ObjectMappingException e) {
                         e.printStackTrace();
@@ -65,7 +73,7 @@ public class SetConfigCommand implements CommandExecutor {
                 ItemType item = (ItemType) value.get();
                 try {
                     List<String> items = Lists.newArrayList(plugin.getConfig().getNode("items").getList(TypeToken.of(String.class)));
-                    if(!items.contains(item.getName())){
+                    if (!items.contains(item.getName())) {
                         items.add(item.getName());
                         src.sendMessage(Text.of(item.getName(), " was added to the accepted list!"));
                     } else {
