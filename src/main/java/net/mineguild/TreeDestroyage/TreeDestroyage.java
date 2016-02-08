@@ -33,7 +33,7 @@ import java.util.List;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.7-DEV")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.7")
 public class TreeDestroyage {
 
     @Inject
@@ -122,6 +122,10 @@ public class TreeDestroyage {
                     items.add(config.getNode("item").getString());
                     config.getNode("items").setComment("List of items that can be used as axe").setValue(items);
                     config.removeChild("item");
+                    versionNode.setValue(versionNode.getInt() + 1);
+                case 4:
+                    getLogger().info(String.format("Migrating from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
+                    config.getNode("consumeDurability").setComment("Whether to consume durability from tools that support it.").setValue(true);
                     versionNode.setValue(versionNode.getInt() + 1);
             }
 

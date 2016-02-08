@@ -46,10 +46,11 @@ public class BreakBlockHandler {
             Player cause = breakEvent.getCause().first(Player.class).get();
             Optional<ItemStack> inHand = cause.getItemInHand();
             List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
+            final boolean consumeDurability = getConfig().getNode("consumeDurability").getBoolean();
             if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && cause.hasPermission("TreeDestroyage.destroy")) {
                 ItemStack item = inHand.get();
-                int maxAmount = 0; // 0 for unlimited
-                if (item.get(Keys.ITEM_DURABILITY).isPresent()) {
+                int maxAmount = getConfig().getNode("maxBlocks").getInt();
+                if (consumeDurability && item.get(Keys.ITEM_DURABILITY).isPresent()) {
                     int durability = item.get(Keys.ITEM_DURABILITY).get();
                     maxAmount = durability + 2; // Because durability=0 is the last hit
                     if (durability == 0) {
@@ -89,7 +90,7 @@ public class BreakBlockHandler {
                             Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
                             cause.getWorld().spawnEntity(entity, Cause.of(cause));
-                            if (item.supports(Keys.ITEM_DURABILITY)) {
+                            if (consumeDurability && item.supports(Keys.ITEM_DURABILITY)) {
                                 if (item.get(Keys.ITEM_DURABILITY).get() == 0) {
                                     cause.getWorld().playSound(SoundTypes.ITEM_BREAK, cause.getLocation().getPosition(), 1);
                                     cause.setItemInHand(null);

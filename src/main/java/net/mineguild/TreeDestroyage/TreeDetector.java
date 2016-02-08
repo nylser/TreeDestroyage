@@ -21,6 +21,16 @@ public class TreeDetector {
     private TreeType treeType;
     private boolean inExtended = false;
 
+    public final Vector3d[] DIRECTIONS = {
+            Vector3d.UP,
+            Vector3d.RIGHT,
+            Vector3d.RIGHT.mul(-1),
+            Vector3d.FORWARD,
+            Vector3d.FORWARD.mul(-1),
+            Vector3d.UP.mul(-1)
+    };
+
+    private Vector3d lastDirection = Vector3d.ZERO;
 
     public TreeDetector(BlockSnapshot startBlock, int maxAmount, ConfigurationNode config) {
         this.startBlock = startBlock;
@@ -46,81 +56,35 @@ public class TreeDetector {
     }
 
     private void getWoodLocations(BlockSnapshot startBlock) {
-        if (woodSnaps.size() < config.getNode("maxBlocks").getInt(200) && woodSnaps.size() < maxAmount && isWood(startBlock)) {
-            if ((startBlock.getState().get(Keys.TREE_TYPE).get().equals(treeType))) {
+        if (woodSnaps.size() < config.getNode("maxBlocks").getInt(200) && woodSnaps.size() < maxAmount) {
+            if (isWood(startBlock) && (startBlock.getState().get(Keys.TREE_TYPE).get().equals(treeType))) {
                 inExtended = false;
                 woodSnaps.add(startBlock);
                 locations.add(startBlock.getLocation().get().getPosition());
-                //Set<Location> locationLocal;
-                // Checking upwards
-                Location nextBlock = startBlock.getLocation().get().add(Vector3d.UP);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+                // Checking all DIRECTIONS
+                for (Vector3d dir : DIRECTIONS) {
+                    Location nextBlock = startBlock.getLocation().get().add(dir);
+                    if (!locations.contains(nextBlock.getPosition())) {
+                        getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+                    }
                 }
-                // Checking right
-                nextBlock = startBlock.getLocation().get().add(Vector3d.RIGHT);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+            } else {
+                if (!inExtended) {
+                    extendedCheck(startBlock);
                 }
-                // Checking left
-                nextBlock = startBlock.getLocation().get().sub(Vector3d.RIGHT);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-                }
-                //Checking forwards
-                nextBlock = startBlock.getLocation().get().add(Vector3d.FORWARD);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-                }
-                //Checking backwards
-                nextBlock = startBlock.getLocation().get().sub(Vector3d.FORWARD);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-                }
-                //Checking downwards
-                nextBlock = startBlock.getLocation().get().sub(Vector3d.UP);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-                }
-            }
-        } else {
-            if (!inExtended) {
-                extendedCheck(startBlock);
             }
         }
     }
 
     private void extendedCheck(BlockSnapshot startBlock) {
         inExtended = true;
-        // Checking upwards
-        Location nextBlock = startBlock.getLocation().get().add(Vector3d.UP);
-        if (!locations.contains(nextBlock.getPosition())) {
-            getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-        }
-        // Checking right
-        nextBlock = startBlock.getLocation().get().add(Vector3d.RIGHT);
-        if (!locations.contains(nextBlock.getPosition())) {
-            getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-        }
-        // Checking left
-        nextBlock = startBlock.getLocation().get().sub(Vector3d.RIGHT);
-        if (!locations.contains(nextBlock.getPosition())) {
-            getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-        }
-        //Checking forwards
-        nextBlock = startBlock.getLocation().get().add(Vector3d.FORWARD);
-        if (!locations.contains(nextBlock.getPosition())) {
-            getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-        }
-        //Checking backwards
-        nextBlock = startBlock.getLocation().get().sub(Vector3d.FORWARD);
-        if (!locations.contains(nextBlock.getPosition())) {
-            getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-        }
-        //Checking downwards
-        nextBlock = startBlock.getLocation().get().sub(Vector3d.UP);
-        if (!locations.contains(nextBlock.getPosition())) {
-            getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+        for (Vector3d dir : DIRECTIONS) {
+            if (!dir.equals(lastDirection)) { // Don't allow a ONE BLOCK gap between// primitive check..
+                Location nextBlock = startBlock.getLocation().get().add(dir);
+                if (!locations.contains(nextBlock.getPosition())) {
+                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+                }
+            }
         }
     }
 }
