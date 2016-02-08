@@ -3,6 +3,7 @@ package net.mineguild.TreeDestroyage;
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
+import net.minecrell.mcstats.SpongeStatsLite;
 import net.mineguild.TreeDestroyage.commands.SetConfigCommand;
 import net.mineguild.TreeDestroyage.event.BreakBlockHandler;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -17,6 +18,7 @@ import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.GameInitializationEvent;
+import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
 import org.spongepowered.api.event.game.state.GameStartingServerEvent;
 import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
 import org.spongepowered.api.item.ItemType;
@@ -31,7 +33,7 @@ import java.util.List;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.6-DEV")
+@Plugin(id = "TreeDestroyage", name = "TreeDestroyage", version = "0.7-DEV")
 public class TreeDestroyage {
 
     @Inject
@@ -46,7 +48,11 @@ public class TreeDestroyage {
     private File defaultConfig;
 
     @Inject
+    public SpongeStatsLite stats;
+
+    @Inject
     private Logger logger;
+
     @Inject
     private Game game;
     private CommentedConfigurationNode config;
@@ -56,13 +62,12 @@ public class TreeDestroyage {
     }
 
     @Listener
+    public void onPreInit(GamePreInitializationEvent event) {
+        this.stats.start();
+    }
+
+    @Listener
     public void onInitialization(GameInitializationEvent event) {
-/*        try {
-            Metrics m = new Metrics(Sponge.getGame(), container);
-            m.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
         Sponge.getGame().getEventManager().registerListeners(this, new BreakBlockHandler(this));
 
         CommandSpec setSpec = CommandSpec.builder().arguments(string(Text.of("setting")), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
