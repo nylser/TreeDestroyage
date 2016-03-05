@@ -42,7 +42,6 @@ public class TreeDetector {
             treeType = startBlock.getState().get(Keys.TREE_TYPE).get();
         }
     }
-
     public static boolean isWood(BlockSnapshot loc) {
         return loc.getState().getType() == BlockTypes.LOG || loc.getState().getType() == BlockTypes.LOG2;
     }
@@ -66,6 +65,7 @@ public class TreeDetector {
                     Location nextBlock = startBlock.getLocation().get().add(dir);
                     if (!locations.contains(nextBlock.getPosition())) {
                         getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+                        lastDirection = dir;
                     }
                 }
             } else {
@@ -83,6 +83,7 @@ public class TreeDetector {
                 Location nextBlock = startBlock.getLocation().get().add(dir);
                 if (!locations.contains(nextBlock.getPosition())) {
                     getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+                    lastDirection = dir;
                 }
             }
         }

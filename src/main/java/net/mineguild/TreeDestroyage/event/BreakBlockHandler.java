@@ -8,11 +8,14 @@ import net.mineguild.TreeDestroyage.TreeDestroyage;
 import net.mineguild.TreeDestroyage.TreeDetector;
 import ninja.leaping.configurate.ConfigurationNode;
 import org.spongepowered.api.Game;
+import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.type.TreeType;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.Entity;
 import org.spongepowered.api.entity.EntityTypes;
@@ -22,12 +25,17 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.item.ItemType;
+import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class BreakBlockHandler {
 
@@ -41,8 +49,14 @@ public class BreakBlockHandler {
 
     @Listener
     public void handle(ChangeBlockEvent.Break breakEvent) throws Exception {
-        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() && breakEvent.getTransactions().size() == 1 &&
-                TreeDetector.isWood(breakEvent.getTransactions().get(0).getOriginal())) {
+        if (breakEvent.getTransactions().size() > 1) {
+            return;
+        }
+        Transaction<BlockSnapshot> transaction = breakEvent.getTransactions().get(0);
+        boolean isBase = !TreeDetector.isWood(transaction.getOriginal().getLocation().get().sub(Vector3d.UP).createSnapshot());
+        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
+                TreeDetector.isWood(transaction.getOriginal())) {
+            TreeType treeType = transaction.getOriginal().getState().get(Keys.TREE_TYPE).get();
             Player cause = breakEvent.getCause().first(Player.class).get();
             Optional<ItemStack> inHand = cause.getItemInHand();
             List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
@@ -108,8 +122,43 @@ public class BreakBlockHandler {
 
                 });
                 firedEvents.clear();
+                if (isBase && getConfig().getNode("placeSapling").getBoolean()) {
+                    placeSapling(cause, breakEvent.getTransactions().get(0).getOriginal().getLocation().get(), treeType);
+                }
             }
         }
+    }
+
+    private void placeSapling(Player c, Location<World> treeBlock, TreeType treeType) {
+        Location baseBlock = treeBlock.sub(Vector3d.UP);
+        // Not yet implemented
+        /*Optional<ItemStackSnapshot> saplingSnapshot = ItemTypes.SAPLING.getTemplate().with(Keys.TREE_TYPE, treeType);
+        if(saplingSnapshot.isPresent()){
+            Optional<Set<BlockType>> placeableBlocks = saplingSnapshot.get().get(Keys.PLACEABLE_BLOCKS);
+            if (placeableBlocks.isPresent()){
+                if(placeableBlocks.get().contains(baseBlock.getBlockType())) {
+
+                }
+
+            } else {
+                System.out.println("Placeable blocks not present!");
+            }
+        }*/
+        if(baseBlock.getBlockType() == BlockTypes.DIRT || baseBlock.getBlockType() == BlockTypes.GRASS){
+            BlockSnapshot old = treeBlock.getBlock().snapshotFor(treeBlock);
+            BlockSnapshot newBL = old.withState(BlockState.builder().blockType(BlockTypes.SAPLING).build().with(Keys.TREE_TYPE, treeType).get());
+            Transaction<BlockSnapshot> transaction = new Transaction<>(old, newBL);
+            List<Transaction<BlockSnapshot>> transactions = Lists.newArrayList();
+            transactions.add(transaction);
+            ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Cause.of(c), c.getWorld(), transactions);
+            if (!Sponge.getEventManager().post(event)) {
+                transaction.getFinal().restore(true, true);
+                if(getConfig().getNode("saplingProtection").getInt() > 0){
+                    plugin.getSaplingHandler().addProtectedSapling(treeBlock);
+                }
+            }
+        }
+
     }
 
     private ConfigurationNode getConfig() {
