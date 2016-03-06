@@ -120,7 +120,7 @@ public class TreeDestroyage {
             choices.put((String) obj, (String) obj);
         }
 
-        
+
         CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
                 .permission("TreeDestroyage.set").build();
 

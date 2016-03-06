@@ -54,7 +54,7 @@ public class BreakBlockHandler {
         }
         Transaction<BlockSnapshot> transaction = breakEvent.getTransactions().get(0);
         boolean isBase = !TreeDetector.isWood(transaction.getOriginal().getLocation().get().sub(Vector3d.UP).createSnapshot());
-        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
+        if ((getConfig().getNode("baseOnly").getBoolean() && isBase) && !firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
                 TreeDetector.isWood(transaction.getOriginal())) {
             TreeType treeType = transaction.getOriginal().getState().get(Keys.TREE_TYPE).get();
             Player cause = breakEvent.getCause().first(Player.class).get();
