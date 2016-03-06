@@ -54,7 +54,10 @@ public class BreakBlockHandler {
         }
         Transaction<BlockSnapshot> transaction = breakEvent.getTransactions().get(0);
         boolean isBase = !TreeDetector.isWood(transaction.getOriginal().getLocation().get().sub(Vector3d.UP).createSnapshot());
-        if ((getConfig().getNode("baseOnly").getBoolean() && isBase) && !firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
+        if (getConfig().getNode("baseOnly").getBoolean()) {
+            if(!isBase) return;
+        }
+        if (!firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
                 TreeDetector.isWood(transaction.getOriginal())) {
             TreeType treeType = transaction.getOriginal().getState().get(Keys.TREE_TYPE).get();
             Player cause = breakEvent.getCause().first(Player.class).get();
@@ -144,7 +147,7 @@ public class BreakBlockHandler {
                 System.out.println("Placeable blocks not present!");
             }
         }*/
-        if(baseBlock.getBlockType() == BlockTypes.DIRT || baseBlock.getBlockType() == BlockTypes.GRASS){
+        if (baseBlock.getBlockType() == BlockTypes.DIRT || baseBlock.getBlockType() == BlockTypes.GRASS) {
             BlockSnapshot old = treeBlock.getBlock().snapshotFor(treeBlock);
             BlockSnapshot newBL = old.withState(BlockState.builder().blockType(BlockTypes.SAPLING).build().with(Keys.TREE_TYPE, treeType).get());
             Transaction<BlockSnapshot> transaction = new Transaction<>(old, newBL);
@@ -153,7 +156,7 @@ public class BreakBlockHandler {
             ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Cause.of(c), c.getWorld(), transactions);
             if (!Sponge.getEventManager().post(event)) {
                 transaction.getFinal().restore(true, true);
-                if(getConfig().getNode("saplingProtection").getInt() > 0){
+                if (getConfig().getNode("saplingProtection").getInt() > 0) {
                     plugin.getSaplingHandler().addProtectedSapling(treeBlock);
                 }
             }
