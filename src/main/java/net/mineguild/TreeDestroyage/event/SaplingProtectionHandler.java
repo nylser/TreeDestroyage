@@ -1,16 +1,13 @@
-package net.mineguild.TreeDestroyage.event;
+package net.mineguild.treedestroyage.event;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import net.mineguild.TreeDestroyage.TreeDestroyage;
-import ninja.leaping.configurate.ConfigurationNode;
+import net.mineguild.treedestroyage.TreeDestroyage;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.plugin.Plugin;
-import org.spongepowered.api.scheduler.Scheduler;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;

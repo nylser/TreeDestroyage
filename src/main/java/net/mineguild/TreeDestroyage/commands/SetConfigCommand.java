@@ -1,8 +1,8 @@
-package net.mineguild.TreeDestroyage.commands;
+package net.mineguild.treedestroyage.commands;
 
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
-import net.mineguild.TreeDestroyage.TreeDestroyage;
+import net.mineguild.treedestroyage.TreeDestroyage;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;

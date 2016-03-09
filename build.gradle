@@ -8,7 +8,7 @@ group 'mineguild.net'
 
 
 ext.versionCode = System.getenv("BUILD_NUMBER") as Integer ?: 0
-ext.versionName = "0.8-DEV"
+ext.versionName = "0.8-DEV-API4.0.3"
 
 version "${versionName}-${versionCode}"
 
@@ -28,8 +28,8 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongeapi:3.1.0-SNAPSHOT'
-    compile 'net.minecrell.mcstats:statslite-sponge:0.2.1'
+    compile 'org.spongepowered:spongeapi:4.0.3'
+    compile 'net.minecrell.mcstats:statslite-sponge:0.2.2'
 }
 
 shadowJar {

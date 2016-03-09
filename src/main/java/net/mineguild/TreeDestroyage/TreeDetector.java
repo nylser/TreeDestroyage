@@ -1,4 +1,4 @@
-package net.mineguild.TreeDestroyage;
+package net.mineguild.treedestroyage;
 
 import com.flowpowered.math.vector.Vector3d;
 import ninja.leaping.configurate.ConfigurationNode;
