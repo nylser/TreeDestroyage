@@ -1,6 +1,7 @@
 package net.mineguild.minecraft.treedestroyage;
 
 import com.flowpowered.math.vector.Vector3d;
+import com.google.common.collect.Lists;
 import ninja.leaping.configurate.ConfigurationNode;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
@@ -8,6 +9,7 @@ import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.TreeType;
 import org.spongepowered.api.world.Location;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,14 +23,13 @@ public class TreeDetector {
     private TreeType treeType;
     private boolean inExtended = false;
 
-    public final Vector3d[] DIRECTIONS = {
-            Vector3d.UP,
+    public final ArrayList<Vector3d> DIRECTIONS = Lists.newArrayList(Vector3d.UP,
             Vector3d.RIGHT,
             Vector3d.RIGHT.mul(-1),
             Vector3d.FORWARD,
-            Vector3d.FORWARD.mul(-1),
-            Vector3d.UP.mul(-1)
-    };
+            Vector3d.FORWARD.mul(-1));
+
+    public final Vector3d downwards = Vector3d.UP.mul(-1);
 
     private Vector3d lastDirection = Vector3d.ZERO;
 
@@ -36,6 +37,9 @@ public class TreeDetector {
         this.startBlock = startBlock;
         this.maxAmount = maxAmount;
         this.config = config;
+        if(config.getNode("breakDownwards").getBoolean()){
+            DIRECTIONS.add(downwards);
+        }
         if (!isWood(startBlock)) {
             throw new RuntimeException("Starting block has to be wood!");
         } else {

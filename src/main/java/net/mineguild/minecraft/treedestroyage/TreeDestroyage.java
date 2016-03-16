@@ -176,6 +176,9 @@ public class TreeDestroyage {
                 config.getNode("placeSapling").setComment("Place the according sapling after logging the tree.").setValue(false);
                 config.getNode("saplingProtection").setComment("Amount of time in seconds to protect the placed sapling. (0 to disable)").setValue(60);
                 break;
+            case 6:
+                config.getNode("breakDownwards").setComment("Whether the axe should also log the tree downwards.").setValue(false);
+                break;
             default:
                 return false;
         }

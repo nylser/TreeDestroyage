@@ -120,7 +120,7 @@ public class BreakBlockHandler {
 
                 });
                 firedEvents.clear();
-                if (isBase && getConfig().getNode("placeSapling").getBoolean()) {
+                if ((isBase || getConfig().getNode("breakDownwards").getBoolean()) && getConfig().getNode("placeSapling").getBoolean()) {
                     placeSapling(cause, breakEvent.getTransactions().get(0).getOriginal().getLocation().get(), treeType);
                 }
             }
@@ -142,6 +142,11 @@ public class BreakBlockHandler {
                 System.out.println("Placeable blocks not present!");
             }
         }*/
+        if(getConfig().getNode("breakDownwards").getBoolean()){
+            baseBlock = findBase(baseBlock); // Find baseBlock if not already found.
+            treeBlock = baseBlock.add(Vector3d.UP);
+        }
+
         if (baseBlock.getBlockType() == BlockTypes.DIRT || baseBlock.getBlockType() == BlockTypes.GRASS) {
             BlockSnapshot old = treeBlock.getBlock().snapshotFor(treeBlock);
             BlockSnapshot newBL = old.withState(BlockState.builder().blockType(BlockTypes.SAPLING).build().with(Keys.TREE_TYPE, treeType).get());
@@ -157,6 +162,13 @@ public class BreakBlockHandler {
             }
         }
 
+    }
+
+    private Location findBase(Location startLocation){
+        while(!(startLocation.getBlockType() == BlockTypes.DIRT || startLocation.getBlockType() == BlockTypes.GRASS)){
+            startLocation = startLocation.sub(Vector3d.UP);
+        }
+        return startLocation;
     }
 
     private ConfigurationNode getConfig() {
