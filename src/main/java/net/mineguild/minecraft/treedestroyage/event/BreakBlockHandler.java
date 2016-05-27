@@ -1,12 +1,11 @@
 package net.mineguild.minecraft.treedestroyage.event;
 
 
-import com.flowpowered.math.vector.Vector3d;
-import com.google.common.collect.Lists;
-import com.google.common.reflect.TypeToken;
-import net.mineguild.minecraft.treedestroyage.TreeDestroyage;
-import net.mineguild.minecraft.treedestroyage.TreeDetector;
-import ninja.leaping.configurate.ConfigurationNode;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
@@ -24,13 +23,21 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.NamedCause;
+import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
+import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
+import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import com.flowpowered.math.vector.Vector3d;
+import com.google.common.collect.Lists;
+import com.google.common.reflect.TypeToken;
+
+import net.mineguild.minecraft.treedestroyage.TreeDestroyage;
+import net.mineguild.minecraft.treedestroyage.TreeDetector;
+import ninja.leaping.configurate.ConfigurationNode;
 
 public class BreakBlockHandler {
 
@@ -43,7 +50,7 @@ public class BreakBlockHandler {
     }
 
     @Listener
-    public void handle(ChangeBlockEvent.Break breakEvent) throws Exception {
+    public void handle(ChangeBlockEvent.Break breakEvent, @First Player cause) throws Exception {
         if (breakEvent.getTransactions().size() > 1) {
             return;
         }
@@ -55,7 +62,7 @@ public class BreakBlockHandler {
         if (!firedEvents.contains(breakEvent) && breakEvent.getCause().containsType(Player.class) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
                 TreeDetector.isWood(transaction.getOriginal())) {
             TreeType treeType = transaction.getOriginal().getState().get(Keys.TREE_TYPE).get();
-            Player cause = breakEvent.getCause().first(Player.class).get();
+
             Optional<ItemStack> inHand = cause.getItemInHand();
             List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
             final boolean consumeDurability = getConfig().getNode("consumeDurability").getBoolean();
@@ -91,7 +98,7 @@ public class BreakBlockHandler {
                 });
                 transactions.forEach(blockSnapshotTransaction -> {
                     ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(Cause.builder().owner(cause).build(),
-                            cause.getWorld(), Lists.newArrayList(blockSnapshotTransaction));
+                            cause.getWorld(), Arrays.asList(blockSnapshotTransaction));
                     firedEvents.add(event);
                     if (!getGame().getEventManager().post(event)) {
                         if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
@@ -101,7 +108,7 @@ public class BreakBlockHandler {
                             itemStack.offer(Keys.TREE_TYPE, state.get(Keys.TREE_TYPE).get());
                             Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
-                            cause.getWorld().spawnEntity(entity, Cause.builder().owner(cause).build());
+                            cause.getWorld().spawnEntity(entity, Cause.of(NamedCause.source(EntitySpawnCause.builder().entity(entity).type(SpawnTypes.PLUGIN).build())));
                             if (consumeDurability && item.supports(Keys.ITEM_DURABILITY)) {
                                 if (item.get(Keys.ITEM_DURABILITY).get() == 0) {
                                     cause.getWorld().playSound(SoundTypes.ITEM_BREAK, cause.getLocation().getPosition(), 1);
@@ -128,7 +135,7 @@ public class BreakBlockHandler {
     }
 
     private void placeSapling(Player c, Location<World> treeBlock, TreeType treeType) {
-        Location baseBlock = treeBlock.sub(Vector3d.UP);
+        Location<World> baseBlock = treeBlock.sub(Vector3d.UP);
         // Not yet implemented
         /*Optional<ItemStackSnapshot> saplingSnapshot = ItemTypes.SAPLING.getTemplate().with(Keys.TREE_TYPE, treeType);
         if(saplingSnapshot.isPresent()){
@@ -164,7 +171,7 @@ public class BreakBlockHandler {
 
     }
 
-    private Location findBase(Location startLocation){
+    private Location<World> findBase(Location<World> startLocation){
         while(!(startLocation.getBlockType() == BlockTypes.DIRT || startLocation.getBlockType() == BlockTypes.GRASS)){
             startLocation = startLocation.sub(Vector3d.UP);
         }

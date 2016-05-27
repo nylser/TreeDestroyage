@@ -1,17 +1,20 @@
 package net.mineguild.minecraft.treedestroyage;
 
-import com.flowpowered.math.vector.Vector3d;
-import com.google.common.collect.Lists;
-import ninja.leaping.configurate.ConfigurationNode;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.TreeType;
 import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import com.flowpowered.math.vector.Vector3d;
+import com.google.common.collect.Lists;
+
+import ninja.leaping.configurate.ConfigurationNode;
 
 public class TreeDetector {
 
@@ -66,7 +69,7 @@ public class TreeDetector {
                 locations.add(startBlock.getLocation().get().getPosition());
                 // Checking all DIRECTIONS
                 for (Vector3d dir : DIRECTIONS) {
-                    Location nextBlock = startBlock.getLocation().get().add(dir);
+                    Location<World> nextBlock = startBlock.getLocation().get().add(dir);
                     if (!locations.contains(nextBlock.getPosition())) {
                         getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
                         lastDirection = dir;
@@ -84,7 +87,7 @@ public class TreeDetector {
         inExtended = true;
         for (Vector3d dir : DIRECTIONS) {
             if (!dir.equals(lastDirection)) { // Don't allow a ONE BLOCK gap between// primitive check..
-                Location nextBlock = startBlock.getLocation().get().add(dir);
+                Location<World> nextBlock = startBlock.getLocation().get().add(dir);
                 if (!locations.contains(nextBlock.getPosition())) {
                     getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
                     lastDirection = dir;
