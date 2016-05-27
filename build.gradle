@@ -9,7 +9,7 @@ group 'mineguild.net'
 
 
 ext.versionCode = System.getenv("BUILD_NUMBER") as Integer ?: 0
-ext.versionName = "0.8-DEV-API4.0.3"
+ext.versionName = "0.9-API4.0.3"
 
 version "${versionName}-${versionCode}"
 
@@ -34,7 +34,7 @@ dependencies {
 }
 
 shadowJar {
-    relocate 'net.minecrell.mcstats', 'net.mineguild.mcstats'
+    relocate 'net.minecrell.mcstats', 'net.mineguild.minecraft.treedestroyage.mcstats'
     dependencies {
         include(dependency("net.minecrell.mcstats:statslite-sponge:.*"))
     }

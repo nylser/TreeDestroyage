@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.8-DEV-API4.0.3")
+@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.9-API4.0.3")
 public class TreeDestroyage {
 
     @Inject
@@ -109,7 +109,7 @@ public class TreeDestroyage {
             configManager.save(config);
 
         } catch (IOException e) {
-            getLogger().error("Unable to load/create config!", e);
+
         } catch (ObjectMappingException e) {
             e.printStackTrace();
         }
@@ -136,8 +136,9 @@ public class TreeDestroyage {
                     }
                 }
         ).permission("TreeDestroyage.reload").build();
-        CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").arguments(none()).build();
-        Sponge.getCommandManager().register(this, setSpec, "trds");
+        CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
+                arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
+        Sponge.getCommandManager().register(this, mainSpec, "trds");
         saplingHandler.activate();
     }
 
