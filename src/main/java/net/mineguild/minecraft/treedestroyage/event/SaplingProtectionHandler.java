@@ -1,8 +1,10 @@
 package net.mineguild.minecraft.treedestroyage.event;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import net.mineguild.minecraft.treedestroyage.TreeDestroyage;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.entity.living.player.Player;
@@ -12,10 +14,10 @@ import org.spongepowered.api.text.Text;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+import net.mineguild.minecraft.treedestroyage.TreeDestroyage;
 
 public class SaplingProtectionHandler {
     private TreeDestroyage plugin;
@@ -28,10 +30,10 @@ public class SaplingProtectionHandler {
 
     public void activate(){
         Sponge.getScheduler().createTaskBuilder().interval(10, TimeUnit.SECONDS).execute(() -> {
-            List<Location> toRemove = Lists.newArrayListWithExpectedSize(protectedSaplings.size());
-            for (Map.Entry sapling : protectedSaplings.entrySet()) {
+            List<Location<World>> toRemove = Lists.newArrayListWithExpectedSize(protectedSaplings.size());
+            for (Entry<Location<World>, Long> sapling : protectedSaplings.entrySet()) {
                 if((System.currentTimeMillis() - (long)sapling.getValue()) / 1000 >= plugin.getConfig().getNode("saplingProtection").getInt()){
-                    toRemove.add((Location) sapling.getKey());
+                    toRemove.add(sapling.getKey());
                 }
             }
             toRemove.forEach(location -> protectedSaplings.remove(location));
