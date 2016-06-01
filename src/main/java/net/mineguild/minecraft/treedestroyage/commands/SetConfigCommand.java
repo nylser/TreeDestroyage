@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-@SuppressWarnings("NullableProblems")
 public class SetConfigCommand implements CommandExecutor {
     private TreeDestroyage plugin;
 
