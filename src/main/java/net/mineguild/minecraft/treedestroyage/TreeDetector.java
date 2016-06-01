@@ -8,6 +8,7 @@ import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.data.type.TreeType;
 import org.spongepowered.api.world.Location;
+import org.spongepowered.api.world.World;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,6 +16,12 @@ import java.util.Set;
 
 public class TreeDetector {
 
+    public final ArrayList<Vector3d> DIRECTIONS = Lists.newArrayList(Vector3d.UP,
+            Vector3d.RIGHT,
+            Vector3d.RIGHT.mul(-1),
+            Vector3d.FORWARD,
+            Vector3d.FORWARD.mul(-1));
+    public final Vector3d downwards = Vector3d.UP.mul(-1);
     private BlockSnapshot startBlock;
     private int maxAmount;
     private ConfigurationNode config;
@@ -22,15 +29,6 @@ public class TreeDetector {
     private Set<Vector3d> locations = new HashSet<>();
     private TreeType treeType;
     private boolean inExtended = false;
-
-    public final ArrayList<Vector3d> DIRECTIONS = Lists.newArrayList(Vector3d.UP,
-            Vector3d.RIGHT,
-            Vector3d.RIGHT.mul(-1),
-            Vector3d.FORWARD,
-            Vector3d.FORWARD.mul(-1));
-
-    public final Vector3d downwards = Vector3d.UP.mul(-1);
-
     private Vector3d lastDirection = Vector3d.ZERO;
 
     public TreeDetector(BlockSnapshot startBlock, int maxAmount, ConfigurationNode config) {
@@ -66,7 +64,7 @@ public class TreeDetector {
                 locations.add(startBlock.getLocation().get().getPosition());
                 // Checking all DIRECTIONS
                 for (Vector3d dir : DIRECTIONS) {
-                    Location nextBlock = startBlock.getLocation().get().add(dir);
+                    Location<World> nextBlock = startBlock.getLocation().get().add(dir);
                     if (!locations.contains(nextBlock.getPosition())) {
                         getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
                         lastDirection = dir;
@@ -84,7 +82,7 @@ public class TreeDetector {
         inExtended = true;
         for (Vector3d dir : DIRECTIONS) {
             if (!dir.equals(lastDirection)) { // Don't allow a ONE BLOCK gap between// primitive check..
-                Location nextBlock = startBlock.getLocation().get().add(dir);
+                Location<World> nextBlock = startBlock.getLocation().get().add(dir);
                 if (!locations.contains(nextBlock.getPosition())) {
                     getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
                     lastDirection = dir;

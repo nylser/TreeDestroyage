@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import net.minecrell.mcstats.SpongeStatsLite;
 import net.mineguild.minecraft.treedestroyage.commands.SetConfigCommand;
 import net.mineguild.minecraft.treedestroyage.event.BreakBlockHandler;
@@ -38,24 +39,24 @@ import static org.spongepowered.api.command.args.GenericArguments.*;
 public class TreeDestroyage {
 
     @Inject
+    public SpongeStatsLite stats;
+    @Inject
     private PluginContainer container;
-
     @Inject
     @DefaultConfig(sharedRoot = true)
     private ConfigurationLoader<CommentedConfigurationNode> configManager;
-
     @Inject
     @DefaultConfig(sharedRoot = true)
     private File defaultConfig;
-
-    @Inject
-    public SpongeStatsLite stats;
-
     @Inject
     private Logger logger;
 
     @Inject
     private Game game;
+
+    @Inject
+    private Injector injector;
+
     private CommentedConfigurationNode config;
 
     private BreakBlockHandler breakBlockHandler;
@@ -72,54 +73,24 @@ public class TreeDestroyage {
 
     @Listener
     public void onInitialization(GameInitializationEvent event) {
-        breakBlockHandler = new BreakBlockHandler(this);
-        Sponge.getGame().getEventManager().registerListeners(this, breakBlockHandler);
-        saplingHandler = new SaplingProtectionHandler(this);
-        Sponge.getGame().getEventManager().registerListeners(this, saplingHandler);
-    }
+        saplingHandler = injector.getInstance(SaplingProtectionHandler.class);
+        game.getEventManager().registerListeners(this, saplingHandler);
+        breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
+        game.getEventManager().registerListeners(this, breakBlockHandler);
+        CommentedConfigurationNode fakeNode = configManager.createEmptyNode(); // Fake node to initialize commands earlier.
+        fakeNode.getNode("version").setValue(1);
+        boolean outOfDate; // Upgrade fakeNode to newest.
+        do {
+            outOfDate = configMigration(fakeNode, true);
+        } while (outOfDate);
 
-    @Listener
-    public void onServerStart(GameStartingServerEvent event) {
-        config = null;
-        try {
-            if (!defaultConfig.exists()) {
-                if (!defaultConfig.createNewFile()) {
-                    throw new RuntimeException("Unable to create configuration file!");
-                }
-                config = configManager.load();
-                config.getNode("version").setValue(1);
-                configManager.save(config);
-            }
-            config = configManager.load();
-
-
-            //Migrations here
-            boolean outOfDate;
-            do {
-                outOfDate = configMigration();
-            } while (outOfDate);
-
-            //Validation checks here
-            List<String> items = config.getNode("items").getList(TypeToken.of(String.class));
-            List<String> newItems = Lists.newArrayList(items);
-            List<String> toRemove = new ArrayList<>();
-            items.stream().filter(id -> !game.getRegistry().getType(ItemType.class, id).isPresent()).forEach(toRemove::add);
-            toRemove.forEach(newItems::remove);
-            config.getNode("items").setValue(newItems);
-            configManager.save(config);
-
-        } catch (IOException e) {
-
-        } catch (ObjectMappingException e) {
-            e.printStackTrace();
-        }
+        // Command registration - Here for SP compatibility
         Set<String> newSet = Sets.newHashSet();
-        config.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
+        fakeNode.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
         Map<String, String> choices = new HashMap<>();
         for (Object obj : config.getChildrenMap().keySet()) {
             choices.put((String) obj, (String) obj);
         }
-
 
         CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
                 .permission("TreeDestroyage.set").build();
@@ -139,6 +110,43 @@ public class TreeDestroyage {
         CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
                 arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
         Sponge.getCommandManager().register(this, mainSpec, "trds");
+
+    }
+
+    @Listener
+    public void onServerStart(GameStartingServerEvent event) {
+        config = null;
+        try {
+            if (!defaultConfig.exists()) {
+                System.out.println("Creating new file.");
+                if (!defaultConfig.createNewFile()) {
+                    getLogger().error("Couldn't create new config file! Check R/W access!");
+                }
+                config = configManager.load();
+                config.getNode("version").setValue(1);
+                configManager.save(config);
+            }
+            config = configManager.load();
+
+
+            //Migrations here
+            boolean outOfDate;
+            do {
+                outOfDate = configMigration(config, false);
+            } while (outOfDate);
+
+            //Validation checks here
+            List<String> items = config.getNode("items").getList(TypeToken.of(String.class));
+            List<String> newItems = Lists.newArrayList(items);
+            List<String> toRemove = new ArrayList<>();
+            items.stream().filter(id -> !game.getRegistry().getType(ItemType.class, id).isPresent()).forEach(toRemove::add);
+            toRemove.forEach(newItems::remove);
+            config.getNode("items").setValue(newItems);
+            configManager.save(config);
+
+        } catch (IOException | ObjectMappingException e) {
+            logger.error("Couldn't save config! Plugin might malfunction!");
+        }
         saplingHandler.activate();
     }
 
@@ -151,7 +159,7 @@ public class TreeDestroyage {
         }
     }
 
-    public boolean configMigration(){
+    public boolean configMigration(CommentedConfigurationNode config, boolean quiet) {
         ConfigurationNode versionNode = config.getNode("version");
         switch (versionNode.getInt()) {
             case 1:
@@ -183,7 +191,8 @@ public class TreeDestroyage {
             default:
                 return false;
         }
-        getLogger().info(String.format("Migrated from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
+        if (!quiet)
+            getLogger().info(String.format("Migrated from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
         versionNode.setValue(versionNode.getInt() + 1);
         return true;
 
@@ -207,7 +216,7 @@ public class TreeDestroyage {
         }
     }
 
-    public SaplingProtectionHandler getSaplingHandler(){
+    public SaplingProtectionHandler getSaplingHandler() {
         return saplingHandler;
     }
 
