@@ -77,40 +77,6 @@ public class TreeDestroyage {
         game.getEventManager().registerListeners(this, saplingHandler);
         breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
         game.getEventManager().registerListeners(this, breakBlockHandler);
-        CommentedConfigurationNode fakeNode = configManager.createEmptyNode(); // Fake node to initialize commands earlier.
-        fakeNode.getNode("version").setValue(1);
-        boolean outOfDate; // Upgrade fakeNode to newest.
-        do {
-            outOfDate = configMigration(fakeNode, true);
-        } while (outOfDate);
-
-        // Command registration - Here for SP compatibility
-        Set<String> newSet = Sets.newHashSet();
-        fakeNode.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
-        Map<String, String> choices = new HashMap<>();
-        for (Object obj : config.getChildrenMap().keySet()) {
-            choices.put((String) obj, (String) obj);
-        }
-
-        CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
-                .permission("TreeDestroyage.set").build();
-
-        CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
-                    try {
-                        config = configManager.load();
-                        src.sendMessage(Text.of("Config reloaded!"));
-                        return CommandResult.success();
-                    } catch (IOException e) {
-                        src.sendMessage(Text.of("Config couldn't be reloaded!"));
-                        getLogger().error("Couldn't re-load config", e);
-                        return CommandResult.empty();
-                    }
-                }
-        ).permission("TreeDestroyage.reload").build();
-        CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
-                arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
-        Sponge.getCommandManager().register(this, mainSpec, "trds");
-
     }
 
     @Listener
@@ -144,9 +110,35 @@ public class TreeDestroyage {
             config.getNode("items").setValue(newItems);
             configManager.save(config);
 
+
         } catch (IOException | ObjectMappingException e) {
             logger.error("Couldn't save config! Plugin might malfunction!");
         }
+        Set<String> newSet = Sets.newHashSet();
+        config.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
+        Map<String, String> choices = new HashMap<>();
+        for (Object obj : config.getChildrenMap().keySet()) {
+            choices.put((String) obj, (String) obj);
+        }
+
+        CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
+                .permission("TreeDestroyage.set").build();
+
+        CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
+                    try {
+                        config = configManager.load();
+                        src.sendMessage(Text.of("Config reloaded!"));
+                        return CommandResult.success();
+                    } catch (IOException e) {
+                        src.sendMessage(Text.of("Config couldn't be reloaded!"));
+                        getLogger().error("Couldn't re-load config", e);
+                        return CommandResult.empty();
+                    }
+                }
+        ).permission("TreeDestroyage.reload").build();
+        CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
+                arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
+        Sponge.getCommandManager().register(this, mainSpec, "trds");
         saplingHandler.activate();
     }
 
