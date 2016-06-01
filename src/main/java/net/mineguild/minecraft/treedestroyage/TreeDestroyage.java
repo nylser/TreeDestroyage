@@ -35,7 +35,7 @@ import java.util.*;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.9-API4.0.3")
+@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.9a-API4.0.3")
 public class TreeDestroyage {
 
     @Inject
