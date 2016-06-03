@@ -20,10 +20,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.GameInitializationEvent;
-import org.spongepowered.api.event.game.state.GamePreInitializationEvent;
-import org.spongepowered.api.event.game.state.GameStartingServerEvent;
-import org.spongepowered.api.event.game.state.GameStoppingServerEvent;
+import org.spongepowered.api.event.game.state.*;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
@@ -35,7 +32,7 @@ import java.util.*;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.9a-API4.1.0")
+@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.10-DEV-API4.1.0")
 public class TreeDestroyage {
 
     @Inject
@@ -77,10 +74,54 @@ public class TreeDestroyage {
         game.getEventManager().registerListeners(this, saplingHandler);
         breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
         game.getEventManager().registerListeners(this, breakBlockHandler);
+        loadConfig();
+        registerCommands();
     }
 
     @Listener
     public void onServerStart(GameStartingServerEvent event) {
+
+        saplingHandler.activate();
+    }
+
+    @Listener
+    public void onGameStopping(GameStoppingEvent event){
+        try {
+            configManager.save(config);
+        } catch (IOException e) {
+            getLogger().error("Unable to save config!", e);
+        }
+    }
+
+    private void registerCommands() {
+        Set<String> newSet = Sets.newHashSet();
+        config.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
+        Map<String, String> choices = new HashMap<>();
+        for (Object obj : config.getChildrenMap().keySet()) {
+            choices.put((String) obj, (String) obj);
+        }
+
+        CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
+                .permission("TreeDestroyage.set").build();
+
+        CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
+                    try {
+                        config = configManager.load();
+                        src.sendMessage(Text.of("Config reloaded!"));
+                        return CommandResult.success();
+                    } catch (IOException e) {
+                        src.sendMessage(Text.of("Config couldn't be reloaded!"));
+                        getLogger().error("Couldn't re-load config", e);
+                        return CommandResult.empty();
+                    }
+                }
+        ).permission("TreeDestroyage.reload").build();
+        CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
+                arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
+        Sponge.getCommandManager().register(this, mainSpec, "trds");
+    }
+
+    private void loadConfig() {
         config = null;
         try {
             if (!defaultConfig.exists()) {
@@ -114,47 +155,9 @@ public class TreeDestroyage {
         } catch (IOException | ObjectMappingException e) {
             logger.error("Couldn't save config! Plugin might malfunction!");
         }
-
-        if (!Sponge.getCommandManager().get("trds").isPresent()) { //Only register if commands are not already in registry.
-            Set<String> newSet = Sets.newHashSet();
-            config.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
-            Map<String, String> choices = new HashMap<>();
-            for (Object obj : config.getChildrenMap().keySet()) {
-                choices.put((String) obj, (String) obj);
-            }
-
-            CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
-                    .permission("TreeDestroyage.set").build();
-
-            CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
-                try {
-                    config = configManager.load();
-                    src.sendMessage(Text.of("Config reloaded!"));
-                    return CommandResult.success();
-                } catch (IOException e) {
-                    src.sendMessage(Text.of("Config couldn't be reloaded!"));
-                    getLogger().error("Couldn't re-load config", e);
-                    return CommandResult.empty();
-                }
-                    }
-            ).permission("TreeDestroyage.reload").build();
-            CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
-                    arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
-            Sponge.getCommandManager().register(this, mainSpec, "trds");
-        }
-        saplingHandler.activate();
     }
 
-    @Listener
-    public void onServerStop(GameStoppingServerEvent event) {
-        try {
-            configManager.save(config);
-        } catch (IOException e) {
-            getLogger().error("Unable to save config!", e);
-        }
-    }
-
-    public boolean configMigration(CommentedConfigurationNode config, boolean quiet) {
+    private boolean configMigration(CommentedConfigurationNode config, boolean quiet) {
         ConfigurationNode versionNode = config.getNode("version");
         switch (versionNode.getInt()) {
             case 1:
