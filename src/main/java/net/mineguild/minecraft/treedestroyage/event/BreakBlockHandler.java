@@ -15,6 +15,7 @@ import org.spongepowered.api.block.BlockState;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
+import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.data.type.TreeType;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.Entity;
@@ -64,10 +65,10 @@ public class BreakBlockHandler {
         if (!firedEvents.contains(breakEvent) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
                 TreeDetector.isWood(transaction.getOriginal())) {
             TreeType treeType = transaction.getOriginal().getState().get(Keys.TREE_TYPE).get();
-            Optional<ItemStack> inHand = cause.getItemInHand();
+            Optional<ItemStack> inHand = cause.getItemInHand(HandTypes.MAIN_HAND);
             List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
             final boolean consumeDurability = getConfig().getNode("consumeDurability").getBoolean();
-            if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && cause.hasPermission("TreeDestroyage.destroy")) {
+            if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && cause.hasPermission("treedestroyage.destroy")) {
                 ItemStack item = inHand.get();
                 int maxAmount = getConfig().getNode("maxBlocks").getInt();
                 if (consumeDurability && item.get(Keys.ITEM_DURABILITY).isPresent()) {
@@ -110,11 +111,11 @@ public class BreakBlockHandler {
                             cause.getWorld().spawnEntity(entity, Cause.of(NamedCause.source(EntitySpawnCause.builder().entity(entity).type(SpawnTypes.PLUGIN).build())));
                             if (consumeDurability && item.supports(Keys.ITEM_DURABILITY)) {
                                 if (item.get(Keys.ITEM_DURABILITY).get() == 0) {
-                                    cause.getWorld().playSound(SoundTypes.ITEM_BREAK, cause.getLocation().getPosition(), 1);
-                                    cause.setItemInHand(null);
+                                    cause.getWorld().playSound(SoundTypes.ENTITY_ITEM_BREAK, cause.getLocation().getPosition(), 1);
+                                    cause.setItemInHand(HandTypes.MAIN_HAND, null);
                                 } else {
                                     item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get() - 1);
-                                    cause.setItemInHand(item);
+                                    cause.setItemInHand(HandTypes.MAIN_HAND, item);
                                 }
                             }
                         }

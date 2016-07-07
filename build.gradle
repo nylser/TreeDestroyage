@@ -9,7 +9,7 @@ group 'mineguild.net'
 
 
 ext.versionCode = System.getenv("BUILD_NUMBER") as Integer ?: 0
-ext.versionName = "0.10-DEV-API4.1.0"
+ext.versionName = "0.11-DEV-API5.0.0"
 
 version "${versionName}-${versionCode}"
 
@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.spongepowered:spongeapi:4.1.0-SNAPSHOT'
+    compile 'org.spongepowered:spongeapi:5.0.0-SNAPSHOT'
     compile 'net.minecrell.mcstats:statslite-sponge:0.2.2'
 }
 

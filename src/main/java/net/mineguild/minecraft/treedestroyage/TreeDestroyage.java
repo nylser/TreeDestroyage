@@ -32,7 +32,7 @@ import java.util.*;
 
 import static org.spongepowered.api.command.args.GenericArguments.*;
 
-@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.10-DEV-API4.1.0")
+@Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.11-DEV-API5.0.0")
 public class TreeDestroyage {
 
     @Inject
@@ -56,7 +56,6 @@ public class TreeDestroyage {
 
     private CommentedConfigurationNode config;
 
-    private BreakBlockHandler breakBlockHandler;
     private SaplingProtectionHandler saplingHandler;
 
     public Game getGame() {
@@ -72,7 +71,7 @@ public class TreeDestroyage {
     public void onInitialization(GameInitializationEvent event) {
         saplingHandler = injector.getInstance(SaplingProtectionHandler.class);
         game.getEventManager().registerListeners(this, saplingHandler);
-        breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
+        BreakBlockHandler breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
         game.getEventManager().registerListeners(this, breakBlockHandler);
         loadConfig();
         registerCommands();
@@ -80,7 +79,6 @@ public class TreeDestroyage {
 
     @Listener
     public void onServerStart(GameStartingServerEvent event) {
-
         saplingHandler.activate();
     }
 
@@ -102,7 +100,7 @@ public class TreeDestroyage {
         }
 
         CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
-                .permission("TreeDestroyage.set").build();
+                .permission("treedestroyage.set").build();
 
         CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
                     try {
@@ -115,7 +113,7 @@ public class TreeDestroyage {
                         return CommandResult.empty();
                     }
                 }
-        ).permission("TreeDestroyage.reload").build();
+        ).permission("treedestroyage.reload").build();
         CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
                 arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
         Sponge.getCommandManager().register(this, mainSpec, "trds");

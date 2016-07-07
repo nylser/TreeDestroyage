@@ -9,6 +9,7 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
 import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandExecutor;
+import org.spongepowered.api.data.type.HandTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.item.inventory.ItemStack;
@@ -38,7 +39,7 @@ public class SetConfigCommand implements CommandExecutor {
         } else {
             if (setting.equals("item") && !value.isPresent() && src instanceof Player) {
                 Player p = (Player) src;
-                Optional<ItemStack> item = p.getItemInHand();
+                Optional<ItemStack> item = p.getItemInHand(HandTypes.MAIN_HAND);
                 if (item.isPresent()) {
                     try {
                         List<String> items = plugin.getConfig().getNode("items").getList(TypeToken.of(String.class));

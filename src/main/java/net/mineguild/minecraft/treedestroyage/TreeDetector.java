@@ -16,12 +16,11 @@ import java.util.Set;
 
 public class TreeDetector {
 
-    public final ArrayList<Vector3d> DIRECTIONS = Lists.newArrayList(Vector3d.UP,
+    private final ArrayList<Vector3d> DIRECTIONS = Lists.newArrayList(Vector3d.UP,
             Vector3d.RIGHT,
             Vector3d.RIGHT.mul(-1),
             Vector3d.FORWARD,
             Vector3d.FORWARD.mul(-1));
-    public final Vector3d downwards = Vector3d.UP.mul(-1);
     private BlockSnapshot startBlock;
     private int maxAmount;
     private ConfigurationNode config;
@@ -36,6 +35,7 @@ public class TreeDetector {
         this.maxAmount = maxAmount;
         this.config = config;
         if(config.getNode("breakDownwards").getBoolean()){
+            Vector3d downwards = Vector3d.UP.mul(-1);
             DIRECTIONS.add(downwards);
         }
         if (!isWood(startBlock)) {
@@ -80,14 +80,12 @@ public class TreeDetector {
 
     private void extendedCheck(BlockSnapshot startBlock) {
         inExtended = true;
-        for (Vector3d dir : DIRECTIONS) {
-            if (!dir.equals(lastDirection)) { // Don't allow a ONE BLOCK gap between// primitive check..
-                Location<World> nextBlock = startBlock.getLocation().get().add(dir);
-                if (!locations.contains(nextBlock.getPosition())) {
-                    getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
-                    lastDirection = dir;
-                }
+        DIRECTIONS.stream().filter(dir -> !dir.equals(lastDirection)).forEach(dir -> { // Don't allow a ONE BLOCK gap between. primitive check..
+            Location<World> nextBlock = startBlock.getLocation().get().add(dir);
+            if (!locations.contains(nextBlock.getPosition())) {
+                getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
+                lastDirection = dir;
             }
-        }
+        });
     }
 }
