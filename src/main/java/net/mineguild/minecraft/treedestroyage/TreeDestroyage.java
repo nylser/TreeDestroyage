@@ -5,7 +5,7 @@ import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import net.minecrell.mcstats.SpongeStatsLite;
+//import net.minecrell.mcstats.SpongeStatsLite;
 import net.mineguild.minecraft.treedestroyage.commands.SetConfigCommand;
 import net.mineguild.minecraft.treedestroyage.event.BreakBlockHandler;
 import net.mineguild.minecraft.treedestroyage.event.SaplingProtectionHandler;
@@ -35,8 +35,8 @@ import static org.spongepowered.api.command.args.GenericArguments.*;
 @Plugin(id = "net.mineguild.minecraft.treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.11-DEV-API5.0.0")
 public class TreeDestroyage {
 
-    @Inject
-    public SpongeStatsLite stats;
+    //@Inject
+    //public SpongeStatsLite stats;
     @Inject
     private PluginContainer container;
     @Inject
@@ -62,10 +62,10 @@ public class TreeDestroyage {
         return game;
     }
 
-    @Listener
-    public void onPreInit(GamePreInitializationEvent event) {
+   // @Listener
+    /*public void onPreInit(GamePreInitializationEvent event) {
         this.stats.start();
-    }
+    }**/
 
     @Listener
     public void onInitialization(GameInitializationEvent event) {
