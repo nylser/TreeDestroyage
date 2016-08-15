@@ -31,6 +31,7 @@ import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
@@ -106,7 +107,7 @@ public class BreakBlockHandler {
                         if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
                             BlockState state = blockSnapshotTransaction.getOriginal().getState();
                             ItemStack itemStack = ItemStack.builder().itemType(state.getType().getDefaultState().getType().getItem().get()).add(Keys.TREE_TYPE, state.get(Keys.TREE_TYPE).get()).build();
-                            Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()).get(); // 'cause' is the player
+                            Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
                             cause.getWorld().spawnEntity(entity, Cause.of(NamedCause.source(EntitySpawnCause.builder().entity(entity).type(SpawnTypes.PLUGIN).build())));
                             if (consumeDurability && item.supports(Keys.ITEM_DURABILITY)) {
@@ -119,7 +120,7 @@ public class BreakBlockHandler {
                                 }
                             }
                         }
-                        blockSnapshotTransaction.getFinal().restore(true, true);
+                        blockSnapshotTransaction.getFinal().restore(true, BlockChangeFlag.ALL);
                     } else {
                         // Event got canceled
                         System.out.println("Event canceled.");
@@ -162,7 +163,7 @@ public class BreakBlockHandler {
             transactions.add(transaction);
             ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Cause.builder().owner(c).build(), c.getWorld(), transactions);
             if (!Sponge.getEventManager().post(event)) {
-                transaction.getFinal().restore(true, true);
+                transaction.getFinal().restore(true, BlockChangeFlag.ALL);
                 if (getConfig().getNode("saplingProtection").getInt() > 0) {
                     protHandler.addProtectedSapling(treeBlock);
                 }
