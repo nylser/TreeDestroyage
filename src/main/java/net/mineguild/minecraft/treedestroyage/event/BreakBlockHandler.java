@@ -12,6 +12,7 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
+import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
@@ -30,15 +31,14 @@ import org.spongepowered.api.event.cause.NamedCause;
 import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
 import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
 import org.spongepowered.api.event.filter.cause.First;
+import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
+import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.world.BlockChangeFlag;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class BreakBlockHandler {
 
@@ -100,8 +100,7 @@ public class BreakBlockHandler {
                     transactions.add(t);
                 });
                 transactions.forEach(blockSnapshotTransaction -> {
-                    ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(Cause.builder().owner(cause).build(),
-                            cause.getWorld(), Collections.singletonList(blockSnapshotTransaction));
+                    ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(Cause.builder().owner(cause).build(), Collections.singletonList(blockSnapshotTransaction));
                     firedEvents.add(event);
                     if (!getGame().getEventManager().post(event)) {
                         if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
@@ -122,8 +121,7 @@ public class BreakBlockHandler {
                         }
                         blockSnapshotTransaction.getFinal().restore(true, BlockChangeFlag.ALL);
                     } else {
-                        // Event got canceled
-                        System.out.println("Event canceled.");
+                        plugin.getLogger().debug("Event got canceled");
                     }
 
                 });
@@ -138,18 +136,19 @@ public class BreakBlockHandler {
     private void placeSapling(Player c, Location<World> treeBlock, TreeType treeType) {
         Location<World> baseBlock = treeBlock.sub(Vector3d.UP);
         // Not yet implemented
-        /*Optional<ItemStackSnapshot> saplingSnapshot = ItemTypes.SAPLING.getTemplate().with(Keys.TREE_TYPE, treeType);
+        Optional<ItemStackSnapshot> saplingSnapshot = ItemTypes.SAPLING.getTemplate().with(Keys.TREE_TYPE, treeType);
         if(saplingSnapshot.isPresent()){
             Optional<Set<BlockType>> placeableBlocks = saplingSnapshot.get().get(Keys.PLACEABLE_BLOCKS);
             if (placeableBlocks.isPresent()){
-                if(placeableBlocks.get().contains(baseBlock.getBlockType())) {
-
+                if(!placeableBlocks.get().contains(baseBlock.getBlockType())) {
+                    plugin.getLogger().debug("Canceling placement -- not placeable");
+                    return;
                 }
 
             } else {
-                System.out.println("Placeable blocks not present!");
+                plugin.getLogger().error("Placeable blocks not present!");
             }
-        }*/
+        }
         if (getConfig().getNode("breakDownwards").getBoolean()) {
             baseBlock = findBase(baseBlock); // Find baseBlock if not already found.
             treeBlock = baseBlock.add(Vector3d.UP);
@@ -161,7 +160,7 @@ public class BreakBlockHandler {
             Transaction<BlockSnapshot> transaction = new Transaction<>(old, newBL);
             List<Transaction<BlockSnapshot>> transactions = Lists.newArrayList();
             transactions.add(transaction);
-            ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Cause.builder().owner(c).build(), c.getWorld(), transactions);
+            ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Cause.builder().owner(c).build(), transactions);
             if (!Sponge.getEventManager().post(event)) {
                 transaction.getFinal().restore(true, BlockChangeFlag.ALL);
                 if (getConfig().getNode("saplingProtection").getInt() > 0) {
