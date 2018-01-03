@@ -22,18 +22,18 @@ import java.util.List;
 import java.util.Optional;
 
 public class SetConfigCommand implements CommandExecutor {
-    private TreeDestroyage plugin;
+
+    private final TreeDestroyage plugin;
 
     public SetConfigCommand(TreeDestroyage plugin) {
         this.plugin = plugin;
     }
 
-
     @Override
     public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-        String setting = (String) args.getOne("setting").get();
+        String setting = args.<String>getOne("setting").get();
         Optional<Object> value = args.getOne("value");
-        if ((plugin.getConfig().getNode(setting).isVirtual() && !setting.equals("item")) || setting.equals("version")) {
+        if ((this.plugin.getConfig().getNode(setting).isVirtual() && !setting.equals("item")) || setting.equals("version")) {
             src.sendMessage(Text.of("Invalid value!"));
             return CommandResult.empty();
         } else {
@@ -43,20 +43,20 @@ public class SetConfigCommand implements CommandExecutor {
                 if (item.isPresent()) {
                     try {
                         List<String> items = plugin.getConfig().getNode("items").getList(TypeToken.of(String.class));
-                        if (!items.contains(item.get().getItem().getName())) {
+                        if (!items.contains(item.get().getType().getName())) {
                             List<String> newItems = Lists.newArrayList(items);
-                            newItems.add(item.get().getItem().getName());
+                            newItems.add(item.get().getType().getName());
                             plugin.getConfig().getNode("items").setValue(newItems);
-                            src.sendMessage(Text.of(item.get().getItem().getName(), " added to items"));
+                            src.sendMessage(Text.of(item.get().getType().getName(), " added to items"));
                         } else {
                             src.sendMessage(Text.of("Already in list! ", Text.of(TextColors.RED, "[Remove]").toBuilder().onClick(TextActions.executeCallback(commandSource -> {
                                 try {
                                     List<String> itemsNew = Lists.newArrayList(plugin.getConfig().getNode("items").getList(TypeToken.of(String.class)));
-                                    if (itemsNew.contains(item.get().getItem().getName())) {
-                                        itemsNew.remove(item.get().getItem().getName());
+                                    if (itemsNew.contains(item.get().getType().getName())) {
+                                        itemsNew.remove(item.get().getType().getName());
                                     }
                                     plugin.getConfig().getNode("items").setValue(itemsNew);
-                                    src.sendMessage(Text.of(item.get().getItem().getName(), " removed from items"));
+                                    src.sendMessage(Text.of(item.get().getType().getName(), " removed from items"));
                                 } catch (ObjectMappingException e) {
                                     e.printStackTrace();
                                 }

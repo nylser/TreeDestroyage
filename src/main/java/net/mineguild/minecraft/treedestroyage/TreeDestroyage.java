@@ -1,11 +1,18 @@
 package net.mineguild.minecraft.treedestroyage;
 
+import static org.spongepowered.api.command.args.GenericArguments.bool;
+import static org.spongepowered.api.command.args.GenericArguments.catalogedElement;
+import static org.spongepowered.api.command.args.GenericArguments.choices;
+import static org.spongepowered.api.command.args.GenericArguments.firstParsing;
+import static org.spongepowered.api.command.args.GenericArguments.integer;
+import static org.spongepowered.api.command.args.GenericArguments.none;
+import static org.spongepowered.api.command.args.GenericArguments.onlyOne;
+import static org.spongepowered.api.command.args.GenericArguments.optional;
+
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-//import net.minecrell.mcstats.SpongeStatsLite;
 import net.mineguild.minecraft.treedestroyage.commands.SetConfigCommand;
 import net.mineguild.minecraft.treedestroyage.event.BreakBlockHandler;
 import net.mineguild.minecraft.treedestroyage.event.SaplingProtectionHandler;
@@ -20,7 +27,10 @@ import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.*;
+import org.spongepowered.api.event.game.GameReloadEvent;
+import org.spongepowered.api.event.game.state.GameInitializationEvent;
+import org.spongepowered.api.event.game.state.GameStartingServerEvent;
+import org.spongepowered.api.event.game.state.GameStoppingEvent;
 import org.spongepowered.api.item.ItemType;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.plugin.PluginContainer;
@@ -28,23 +38,27 @@ import org.spongepowered.api.text.Text;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.spongepowered.api.command.args.GenericArguments.*;
-
-@Plugin(id = "treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.12-DEV-API6.0.0")
+@Plugin(id = "treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.13-DEV-API7.0.0")
 public class TreeDestroyage {
 
-    //@Inject
-    //public SpongeStatsLite stats;
     @Inject
     private PluginContainer container;
+
     @Inject
     @DefaultConfig(sharedRoot = true)
     private ConfigurationLoader<CommentedConfigurationNode> configManager;
+
     @Inject
     @DefaultConfig(sharedRoot = true)
     private File defaultConfig;
+
     @Inject
     private Logger logger;
 
@@ -91,31 +105,54 @@ public class TreeDestroyage {
         }
     }
 
+    @Listener
+    public void onReload(GameReloadEvent event) {
+        try {
+            config = configManager.load();
+            logger.info("Config reloaded!");
+        } catch (IOException e) {
+            logger.error("Config couldn't be reloaded!");
+        }
+    }
+
     private void registerCommands() {
-        Set<String> newSet = Sets.newHashSet();
+        Set<String> newSet = new HashSet<>();
         config.getChildrenMap().keySet().forEach(str -> newSet.add((String) str));
         Map<String, String> choices = new HashMap<>();
         for (Object obj : config.getChildrenMap().keySet()) {
             choices.put((String) obj, (String) obj);
         }
 
-        CommandSpec setSpec = CommandSpec.builder().arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class)))).description(Text.of("Change config values on-the-fly")).executor(new SetConfigCommand(this))
-                .permission("treedestroyage.set").build();
+        CommandSpec setSpec = CommandSpec.builder()
+                .arguments(onlyOne(choices(Text.of("setting"), choices)), optional(firstParsing(bool(Text.of("value")), integer(Text.of("value")), catalogedElement(Text.of("value"), ItemType.class))))
+                .description(Text.of("Change config values on-the-fly"))
+                .executor(new SetConfigCommand(this))
+                .permission("treedestroyage.set")
+                .build();
 
-        CommandSpec reloadSpec = CommandSpec.builder().executor((src, args) -> {
-                    try {
-                        config = configManager.load();
-                        src.sendMessage(Text.of("Config reloaded!"));
-                        return CommandResult.success();
-                    } catch (IOException e) {
-                        src.sendMessage(Text.of("Config couldn't be reloaded!"));
-                        getLogger().error("Couldn't re-load config", e);
-                        return CommandResult.empty();
-                    }
-                }
-        ).permission("treedestroyage.reload").build();
-        CommandSpec mainSpec = CommandSpec.builder().child(setSpec, "set").
-                arguments(none()).child(setSpec, "set").child(reloadSpec, "reload").build();
+        CommandSpec reloadSpec = CommandSpec.builder()
+                .executor((src, args) -> {
+                            try {
+                                config = configManager.load();
+                                src.sendMessage(Text.of("Config reloaded!"));
+                                return CommandResult.success();
+                            } catch (IOException e) {
+                                src.sendMessage(Text.of("Config couldn't be reloaded!"));
+                                getLogger().error("Couldn't re-load config", e);
+                                return CommandResult.empty();
+                            }
+                        }
+                )
+                .permission("treedestroyage.reload")
+                .build();
+
+        CommandSpec mainSpec = CommandSpec.builder()
+                .child(setSpec, "set")
+                .arguments(none())
+                .child(setSpec, "set")
+                .child(reloadSpec, "reload")
+                .build();
+
         Sponge.getCommandManager().register(this, mainSpec, "trds");
     }
 
@@ -191,7 +228,6 @@ public class TreeDestroyage {
             getLogger().info(String.format("Migrated from config version %d to %d", versionNode.getInt(), versionNode.getInt() + 1));
         versionNode.setValue(versionNode.getInt() + 1);
         return true;
-
     }
 
     public Logger getLogger() {

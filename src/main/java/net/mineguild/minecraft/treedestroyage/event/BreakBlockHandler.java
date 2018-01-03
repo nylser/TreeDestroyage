@@ -26,19 +26,19 @@ import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
-import org.spongepowered.api.event.cause.Cause;
-import org.spongepowered.api.event.cause.NamedCause;
-import org.spongepowered.api.event.cause.entity.spawn.EntitySpawnCause;
-import org.spongepowered.api.event.cause.entity.spawn.SpawnTypes;
 import org.spongepowered.api.event.filter.cause.First;
 import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.item.inventory.ItemStackSnapshot;
-import org.spongepowered.api.world.BlockChangeFlag;
+import org.spongepowered.api.world.BlockChangeFlags;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public class BreakBlockHandler {
 
@@ -54,7 +54,7 @@ public class BreakBlockHandler {
     private List<ChangeBlockEvent.Break> firedEvents = Lists.newArrayList();
 
     @Listener
-    public void handle(ChangeBlockEvent.Break breakEvent, @First Player cause) throws Exception {
+    public void handle(ChangeBlockEvent.Break breakEvent, @First Player player) throws Exception {
         if (breakEvent.getTransactions().size() > 1) {
             return;
         }
@@ -66,10 +66,10 @@ public class BreakBlockHandler {
         if (!firedEvents.contains(breakEvent) && getConfig().getNode("enabled").getBoolean(true) && !breakEvent.isCancelled() &&
                 TreeDetector.isWood(transaction.getOriginal())) {
             TreeType treeType = transaction.getOriginal().getState().get(Keys.TREE_TYPE).get();
-            Optional<ItemStack> inHand = cause.getItemInHand(HandTypes.MAIN_HAND);
+            Optional<ItemStack> inHand = player.getItemInHand(HandTypes.MAIN_HAND);
             List<String> items = getConfig().getNode("items").getList(TypeToken.of(String.class));
             final boolean consumeDurability = getConfig().getNode("consumeDurability").getBoolean();
-            if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && cause.hasPermission("treedestroyage.destroy")) {
+            if (inHand.isPresent() && items.contains(inHand.get().getItem().getName()) && player.hasPermission("treedestroyage.destroy")) {
                 ItemStack item = inHand.get();
                 int maxAmount = getConfig().getNode("maxBlocks").getInt();
                 if (consumeDurability && item.get(Keys.ITEM_DURABILITY).isPresent()) {
@@ -81,7 +81,7 @@ public class BreakBlockHandler {
                     }
                 }
                 TreeDetector dec = new TreeDetector(breakEvent.getTransactions().get(0).getOriginal(), maxAmount, getConfig());
-                Vector3d playerPos = cause.getLocation().getPosition();
+                Vector3d playerPos = player.getLocation().getPosition();
                 List<Transaction<BlockSnapshot>> transactions = new ArrayList<>(dec.getWoodLocations().size());
                 dec.getWoodLocations().stream().sorted((snap1, snap2) -> {
                     double distance1 = snap1.getPosition().toDouble().distance(playerPos);
@@ -95,31 +95,33 @@ public class BreakBlockHandler {
                     }
                 }).filter(snapshot -> !snapshot.equals(breakEvent.getTransactions().get(0).getOriginal())).forEach(blockSnapshot -> {
                     BlockState newState = BlockTypes.AIR.getDefaultState();
-                    BlockSnapshot newSnapshot = blockSnapshot.withState(newState).withLocation(new Location<>(cause.getWorld(), blockSnapshot.getPosition()));
+                    BlockSnapshot newSnapshot = blockSnapshot.withState(newState).withLocation(new Location<>(player.getWorld(), blockSnapshot.getPosition()));
                     Transaction<BlockSnapshot> t = new Transaction<>(blockSnapshot, newSnapshot);
                     transactions.add(t);
                 });
                 transactions.forEach(blockSnapshotTransaction -> {
-                    ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(Cause.builder().owner(cause).build(), Collections.singletonList(blockSnapshotTransaction));
+                    Sponge.getCauseStackManager().pushCause(player);
+                    ChangeBlockEvent.Break event = SpongeEventFactory.createChangeBlockEventBreak(Sponge.getCauseStackManager().getCurrentCause(), Collections.singletonList(blockSnapshotTransaction));
+                    Sponge.getCauseStackManager().popCause();
                     firedEvents.add(event);
                     if (!getGame().getEventManager().post(event)) {
-                        if (cause.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
+                        if (player.getGameModeData().get(Keys.GAME_MODE).get() != GameModes.CREATIVE) {
                             BlockState state = blockSnapshotTransaction.getOriginal().getState();
                             ItemStack itemStack = ItemStack.builder().itemType(state.getType().getDefaultState().getType().getItem().get()).add(Keys.TREE_TYPE, state.get(Keys.TREE_TYPE).get()).build();
-                            Entity entity = cause.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()); // 'cause' is the player
+                            Entity entity = player.getWorld().createEntity(EntityTypes.ITEM, blockSnapshotTransaction.getOriginal().getPosition()); // 'cause' is the player
                             entity.offer(Keys.REPRESENTED_ITEM, itemStack.createSnapshot());
-                            cause.getWorld().spawnEntity(entity, Cause.of(NamedCause.source(EntitySpawnCause.builder().entity(entity).type(SpawnTypes.PLUGIN).build())));
+                            player.getWorld().spawnEntity(entity);
                             if (consumeDurability && item.supports(Keys.ITEM_DURABILITY)) {
                                 if (item.get(Keys.ITEM_DURABILITY).get() == 0) {
-                                    cause.getWorld().playSound(SoundTypes.ENTITY_ITEM_BREAK, cause.getLocation().getPosition(), 1);
-                                    cause.setItemInHand(HandTypes.MAIN_HAND, null);
+                                    player.getWorld().playSound(SoundTypes.ENTITY_ITEM_BREAK, player.getLocation().getPosition(), 1);
+                                    player.setItemInHand(HandTypes.MAIN_HAND, null);
                                 } else {
                                     item.offer(Keys.ITEM_DURABILITY, item.get(Keys.ITEM_DURABILITY).get() - 1);
-                                    cause.setItemInHand(HandTypes.MAIN_HAND, item);
+                                    player.setItemInHand(HandTypes.MAIN_HAND, item);
                                 }
                             }
                         }
-                        blockSnapshotTransaction.getFinal().restore(true, BlockChangeFlag.ALL);
+                        blockSnapshotTransaction.getFinal().restore(true, BlockChangeFlags.ALL);
                     } else {
                         plugin.getLogger().debug("Event got canceled");
                     }
@@ -127,7 +129,7 @@ public class BreakBlockHandler {
                 });
                 firedEvents.clear();
                 if ((isBase || getConfig().getNode("breakDownwards").getBoolean()) && getConfig().getNode("placeSapling").getBoolean()) {
-                    placeSapling(cause, breakEvent.getTransactions().get(0).getOriginal().getLocation().get(), treeType);
+                    placeSapling(player, breakEvent.getTransactions().get(0).getOriginal().getLocation().get(), treeType);
                 }
             }
         }
@@ -160,9 +162,11 @@ public class BreakBlockHandler {
             Transaction<BlockSnapshot> transaction = new Transaction<>(old, newBL);
             List<Transaction<BlockSnapshot>> transactions = Lists.newArrayList();
             transactions.add(transaction);
-            ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Cause.builder().owner(c).build(), transactions);
+            Sponge.getCauseStackManager().pushCause(c);
+            ChangeBlockEvent.Place event = SpongeEventFactory.createChangeBlockEventPlace(Sponge.getCauseStackManager().getCurrentCause(), transactions);
+            Sponge.getCauseStackManager().popCause();
             if (!Sponge.getEventManager().post(event)) {
-                transaction.getFinal().restore(true, BlockChangeFlag.ALL);
+                transaction.getFinal().restore(true, BlockChangeFlags.ALL);
                 if (getConfig().getNode("saplingProtection").getInt() > 0) {
                     protHandler.addProtectedSapling(treeBlock);
                 }
