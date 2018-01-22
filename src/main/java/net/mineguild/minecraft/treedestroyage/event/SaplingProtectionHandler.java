@@ -1,5 +1,7 @@
 package net.mineguild.minecraft.treedestroyage.event;
 
+import static java.util.Map.Entry;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
@@ -18,8 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static java.util.Map.Entry;
 
 public class SaplingProtectionHandler {
 
