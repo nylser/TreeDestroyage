@@ -29,8 +29,10 @@ public class TreeDetector {
   private TreeType treeType;
   private boolean inExtended = false;
   private Vector3d lastDirection = Vector3d.ZERO;
+  private TreeDestroyage plugin;
 
-  public TreeDetector(BlockSnapshot startBlock, int maxAmount, ConfigurationNode config) {
+  public TreeDetector(TreeDestroyage plugin, BlockSnapshot startBlock, int maxAmount, ConfigurationNode config) {
+    this.plugin = plugin;
     this.startBlock = startBlock;
     this.maxAmount = maxAmount;
     this.config = config;
@@ -69,7 +71,7 @@ public class TreeDetector {
         // Checking all DIRECTIONS
         for (Vector3d dir : DIRECTIONS) {
           Location<World> nextBlock = startBlock.getLocation().get().add(dir);
-          if (!locations.contains(nextBlock.getPosition())) {
+          if (!locations.contains(nextBlock.getPosition()) && !plugin.getBlockPlaceHandler().placedBlocks.containsKey(nextBlock)) {
             getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
             lastDirection = dir;
           }
@@ -87,7 +89,7 @@ public class TreeDetector {
     DIRECTIONS.stream().filter(dir -> !dir.equals(lastDirection))
         .forEach(dir -> { // Don't allow a ONE BLOCK gap between. primitive check..
           Location<World> nextBlock = startBlock.getLocation().get().add(dir);
-          if (!locations.contains(nextBlock.getPosition())) {
+          if (!locations.contains(nextBlock.getPosition()) && !plugin.getBlockPlaceHandler().placedBlocks.containsKey(nextBlock)) {
             getWoodLocations(nextBlock.getBlock().snapshotFor(nextBlock));
             lastDirection = dir;
           }
