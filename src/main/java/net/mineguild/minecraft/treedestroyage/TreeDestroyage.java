@@ -14,6 +14,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import net.mineguild.minecraft.treedestroyage.commands.SetConfigCommand;
+import net.mineguild.minecraft.treedestroyage.event.BlockPlaceHandler;
 import net.mineguild.minecraft.treedestroyage.event.BreakBlockHandler;
 import net.mineguild.minecraft.treedestroyage.event.SaplingProtectionHandler;
 import ninja.leaping.configurate.ConfigurationNode;
@@ -25,6 +26,7 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.spec.CommandSpec;
+import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.GameReloadEvent;
@@ -38,6 +40,7 @@ import org.spongepowered.api.text.Text;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,18 +48,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Plugin(id = "treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.13-DEV-API7.0.0")
+@Plugin(id = "treedestroyage", description = "A plugin that allows to log trees quickly!", name = "TreeDestroyage", version = "0.14-DEV-API7.0.0")
 public class TreeDestroyage {
 
   @Inject
   private PluginContainer container;
 
   @Inject
-  @DefaultConfig(sharedRoot = true)
+  @DefaultConfig(sharedRoot = false)
   private ConfigurationLoader<CommentedConfigurationNode> configManager;
 
   @Inject
-  @DefaultConfig(sharedRoot = true)
+  @DefaultConfig(sharedRoot = false)
   private File defaultConfig;
 
   @Inject
@@ -68,9 +71,21 @@ public class TreeDestroyage {
   @Inject
   private Injector injector;
 
+  @Inject
+  @ConfigDir(sharedRoot = false)
+  private Path configDir;
+  public File configDir(){
+    return this.configDir.toFile();
+  }
+
   private CommentedConfigurationNode config;
 
   private SaplingProtectionHandler saplingHandler;
+
+  private BlockPlaceHandler blockPlaceHandler;
+  public BlockPlaceHandler getBlockPlaceHandler(){
+    return this.blockPlaceHandler;
+  }
 
   public Game getGame() {
     return game;
@@ -83,19 +98,31 @@ public class TreeDestroyage {
     game.getEventManager().registerListeners(this, saplingHandler);
     BreakBlockHandler breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
     game.getEventManager().registerListeners(this, breakBlockHandler);
+
     loadConfig();
+
+
     registerCommands();
   }
 
   @Listener
   public void onServerStart(GameStartingServerEvent event) {
     saplingHandler.activate();
+
+    //need to wait load worlds
+    if (config.getNode("logPlayerBlocks").getBoolean(true)){
+      blockPlaceHandler = new BlockPlaceHandler(this);
+      game.getEventManager().registerListeners(this, blockPlaceHandler);
+    }
   }
 
   @Listener
   public void onGameStopping(GameStoppingEvent event) {
     try {
       configManager.save(config);
+      if (blockPlaceHandler != null){
+        blockPlaceHandler.Stop();
+      }
     } catch (IOException e) {
       getLogger().error("Unable to save config!", e);
     }
@@ -104,10 +131,19 @@ public class TreeDestroyage {
   @Listener
   public void onReload(GameReloadEvent event) {
     try {
-      config = configManager.load();
+      reload();
       logger.info("Config reloaded!");
     } catch (IOException e) {
       logger.error("Config couldn't be reloaded!");
+    }
+  }
+
+  private void reload() throws IOException {
+    config = configManager.load();
+    if (!config.getNode("logPlayerBlocks").getBoolean(true) && blockPlaceHandler != null){
+      blockPlaceHandler.Stop();
+      game.getEventManager().unregisterListeners(blockPlaceHandler);
+      blockPlaceHandler = null;
     }
   }
 
@@ -131,7 +167,7 @@ public class TreeDestroyage {
     CommandSpec reloadSpec = CommandSpec.builder()
         .executor((src, args) -> {
               try {
-                config = configManager.load();
+                reload();
                 src.sendMessage(Text.of("Config reloaded!"));
                 return CommandResult.success();
               } catch (IOException e) {
@@ -182,6 +218,8 @@ public class TreeDestroyage {
           .forEach(toRemove::add);
       toRemove.forEach(newItems::remove);
       config.getNode("items").setValue(newItems);
+      config.getNode("logPlayerBlocks").setValue(true);
+      config.getNode("purgeBlocksTime").setValue(-1);
       configManager.save(config);
 
 
@@ -229,6 +267,12 @@ public class TreeDestroyage {
       case 6:
         config.getNode("breakDownwards")
             .setComment("Whether the axe should also log the tree downwards.").setValue(false);
+        break;
+      case 7:
+        config.getNode("logPlayerBlocks")
+                .setComment("Log placed blocks by player to prevent destroy players buildings.").setValue(true);
+        config.getNode("purgeBlocksTime")
+                .setComment("Remove blocks from database after x days. (-1 to disable)").setValue(-1);
         break;
       default:
         return false;

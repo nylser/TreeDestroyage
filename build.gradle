@@ -9,7 +9,7 @@ group 'mineguild.net'
 
 
 ext.versionCode = System.getenv("BUILD_NUMBER") as Integer ?: 0
-ext.versionName = "0.13-DEV-API7.0.0"
+ext.versionName = "0.14-DEV-API7.0.0"
 
 version "${versionName}-${versionCode}"
 

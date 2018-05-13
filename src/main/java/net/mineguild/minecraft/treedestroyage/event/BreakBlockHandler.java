@@ -60,12 +60,20 @@ public class BreakBlockHandler {
     }
     Transaction<BlockSnapshot> transaction = breakEvent.getTransactions().get(0);
     boolean isBase = !TreeDetector
-        .isWood(transaction.getOriginal().getLocation().get().sub(Vector3d.UP).createSnapshot());
+        .isWood(transaction.getDefault().getLocation().get().sub(Vector3d.UP).createSnapshot());
+
     if (getConfig().getNode("baseOnly").getBoolean()) {
         if (!isBase) {
             return;
         }
     }
+
+    if (plugin.getBlockPlaceHandler().placedBlocks.containsKey(breakEvent.getTransactions().get(0).getOriginal().getLocation().get())){
+      plugin.getBlockPlaceHandler().placedBlocks.remove(breakEvent.getTransactions().get(0).getOriginal().getLocation().get());
+      plugin.getBlockPlaceHandler().SetSave();
+      return;
+    }
+
     if (!firedEvents.contains(breakEvent) && getConfig().getNode("enabled").getBoolean(true)
         && !breakEvent.isCancelled() &&
         TreeDetector.isWood(transaction.getOriginal())) {
@@ -85,7 +93,7 @@ public class BreakBlockHandler {
             return;
           }
         }
-        TreeDetector dec = new TreeDetector(breakEvent.getTransactions().get(0).getOriginal(),
+        TreeDetector dec = new TreeDetector(plugin, breakEvent.getTransactions().get(0).getOriginal(),
             maxAmount, getConfig());
         Vector3d playerPos = player.getLocation().getPosition();
         List<Transaction<BlockSnapshot>> transactions = new ArrayList<>(
@@ -156,8 +164,8 @@ public class BreakBlockHandler {
   private void placeSapling(Player c, Location<World> treeBlock, TreeType treeType) {
     Location<World> baseBlock = treeBlock.sub(Vector3d.UP);
     // Not yet implemented
-    Optional<ItemStackSnapshot> saplingSnapshot = ItemTypes.SAPLING.getTemplate()
-        .with(Keys.TREE_TYPE, treeType);
+    /*
+    Optional<ItemStackSnapshot> saplingSnapshot = ItemTypes.SAPLING.getTemplate().with(Keys.TREE_TYPE, treeType);
     if (saplingSnapshot.isPresent()) {
       Optional<Set<BlockType>> placeableBlocks = saplingSnapshot.get().get(Keys.PLACEABLE_BLOCKS);
       if (placeableBlocks.isPresent()) {
@@ -169,7 +177,7 @@ public class BreakBlockHandler {
       } else {
         plugin.getLogger().error("Placeable blocks not present!");
       }
-    }
+    }*/
     if (getConfig().getNode("breakDownwards").getBoolean()) {
       baseBlock = findBase(baseBlock); // Find baseBlock if not already found.
       treeBlock = baseBlock.add(Vector3d.UP);
@@ -196,13 +204,14 @@ public class BreakBlockHandler {
         }
       }
     }
-
   }
 
   private Location<World> findBase(Location<World> startLocation) {
-    while (!(startLocation.getBlockType() == BlockTypes.DIRT
+    int limit = 0;
+    while (limit <= getConfig().getNode("maxBlocks").getInt(200) && !(startLocation.getBlockType() == BlockTypes.DIRT
         || startLocation.getBlockType() == BlockTypes.GRASS)) {
       startLocation = startLocation.sub(Vector3d.UP);
+      limit++;
     }
     return startLocation;
   }
