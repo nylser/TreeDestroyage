@@ -12,7 +12,6 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.BlockSnapshot;
 import org.spongepowered.api.block.BlockState;
-import org.spongepowered.api.block.BlockType;
 import org.spongepowered.api.block.BlockTypes;
 import org.spongepowered.api.data.Transaction;
 import org.spongepowered.api.data.key.Keys;
@@ -27,9 +26,7 @@ import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.SpongeEventFactory;
 import org.spongepowered.api.event.block.ChangeBlockEvent;
 import org.spongepowered.api.event.filter.cause.First;
-import org.spongepowered.api.item.ItemTypes;
 import org.spongepowered.api.item.inventory.ItemStack;
-import org.spongepowered.api.item.inventory.ItemStackSnapshot;
 import org.spongepowered.api.world.BlockChangeFlags;
 import org.spongepowered.api.world.Location;
 import org.spongepowered.api.world.World;
@@ -38,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public class BreakBlockHandler {
 
@@ -72,7 +68,7 @@ public class BreakBlockHandler {
         .containsKey(breakEvent.getTransactions().get(0).getOriginal().getLocation().get())) {
       plugin.getBlockPlaceHandler().placedBlocks
           .remove(breakEvent.getTransactions().get(0).getOriginal().getLocation().get());
-      plugin.getBlockPlaceHandler().SetSave();
+      plugin.getBlockPlaceHandler().setSave();
       return;
     }
 

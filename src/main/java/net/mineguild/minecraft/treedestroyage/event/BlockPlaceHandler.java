@@ -24,7 +24,7 @@ public class BlockPlaceHandler {
   private Task task;
   private boolean save = true;
 
-  public void SetSave() {
+  public void setSave() {
     save = true;
   }
 
@@ -60,7 +60,7 @@ public class BlockPlaceHandler {
           }
         });
         reader.close();
-        Save(worldOptional.get().getName());
+        save(worldOptional.get().getName());
       } catch (Exception e) {
         e.printStackTrace();
       }
@@ -71,12 +71,12 @@ public class BlockPlaceHandler {
       if (!save) {
         return;
       }
-      Sponge.getServer().getWorlds().forEach(w -> Save(w.getName()));
+      Sponge.getServer().getWorlds().forEach(w -> save(w.getName()));
       save = false;
     }, 1, 1, TimeUnit.MINUTES).getTask();
   }
 
-  private void Save(String world) {
+  private void save(String world) {
     try {
       File path = new File(plugin.configDir(), "blockLogs");
       File file = new File(path, world + ".txt");
@@ -105,8 +105,8 @@ public class BlockPlaceHandler {
     }
   }
 
-  public void Stop() {
-    Sponge.getServer().getWorlds().forEach(w -> Save(w.getName()));
+  public void stop() {
+    Sponge.getServer().getWorlds().forEach(w -> save(w.getName()));
     this.task.cancel();
   }
 

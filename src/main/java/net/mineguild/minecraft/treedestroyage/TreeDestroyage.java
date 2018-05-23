@@ -18,7 +18,6 @@ import net.mineguild.minecraft.treedestroyage.event.BlockPlaceHandler;
 import net.mineguild.minecraft.treedestroyage.event.BreakBlockHandler;
 import net.mineguild.minecraft.treedestroyage.event.SaplingProtectionHandler;
 import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
 import ninja.leaping.configurate.commented.CommentedConfigurationNode;
 import ninja.leaping.configurate.loader.ConfigurationLoader;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
@@ -124,7 +123,7 @@ public class TreeDestroyage {
     try {
       configManager.save(config);
       if (blockPlaceHandler != null) {
-        blockPlaceHandler.Stop();
+        blockPlaceHandler.stop();
       }
     } catch (IOException e) {
       getLogger().error("Unable to save config!", e);
@@ -144,7 +143,7 @@ public class TreeDestroyage {
   private void reload() throws IOException {
     config = configManager.load();
     if (!config.getNode("logPlayerBlocks").getBoolean(true) && blockPlaceHandler != null) {
-      blockPlaceHandler.Stop();
+      blockPlaceHandler.stop();
       game.getEventManager().unregisterListeners(blockPlaceHandler);
       blockPlaceHandler = null;
     }
