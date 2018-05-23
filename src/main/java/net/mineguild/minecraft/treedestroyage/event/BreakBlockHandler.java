@@ -64,13 +64,21 @@ public class BreakBlockHandler {
       }
     }
 
-    if (plugin.getBlockPlaceHandler().placedBlocks
+    if (plugin.getBlockLogger().isEnabled()) {
+      if (transaction.getDefault().getLocation().isPresent() && plugin.getBlockLogger()
+          .isPlayerPlaced(transaction.getDefault().getLocation().get())) {
+        plugin.getBlockLogger().removeBlock(transaction.getDefault().getLocation().get());
+        return;
+      }
+    }
+
+    /*if (plugin.getBlockPlaceHandler().placedBlocks
         .containsKey(breakEvent.getTransactions().get(0).getOriginal().getLocation().get())) {
       plugin.getBlockPlaceHandler().placedBlocks
           .remove(breakEvent.getTransactions().get(0).getOriginal().getLocation().get());
       plugin.getBlockPlaceHandler().setSave();
       return;
-    }
+    }*/
 
     if (!firedEvents.contains(breakEvent) && getConfig().getNode("enabled").getBoolean(true)
         && !breakEvent.isCancelled() &&

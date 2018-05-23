@@ -14,6 +14,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import net.mineguild.minecraft.treedestroyage.commands.SetConfigCommand;
+import net.mineguild.minecraft.treedestroyage.database.BlockLogger;
 import net.mineguild.minecraft.treedestroyage.event.BlockPlaceHandler;
 import net.mineguild.minecraft.treedestroyage.event.BreakBlockHandler;
 import net.mineguild.minecraft.treedestroyage.event.SaplingProtectionHandler;
@@ -75,6 +76,7 @@ public class TreeDestroyage {
   @Inject
   @ConfigDir(sharedRoot = false)
   private Path configDir;
+  private BlockLogger blockLogger;
 
   public File configDir() {
     return this.configDir.toFile();
@@ -101,6 +103,8 @@ public class TreeDestroyage {
     game.getEventManager().registerListeners(this, saplingHandler);
     BreakBlockHandler breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
     game.getEventManager().registerListeners(this, breakBlockHandler);
+    blockLogger = injector.getInstance(BlockLogger.class);
+    game.getEventManager().registerListeners(this, blockLogger);
 
     loadConfig();
 
@@ -122,9 +126,6 @@ public class TreeDestroyage {
   public void onGameStopping(GameStoppingEvent event) {
     try {
       configManager.save(config);
-      if (blockPlaceHandler != null) {
-        blockPlaceHandler.stop();
-      }
     } catch (IOException e) {
       getLogger().error("Unable to save config!", e);
     }
@@ -143,9 +144,9 @@ public class TreeDestroyage {
   private void reload() throws IOException {
     config = configManager.load();
     if (!config.getNode("logPlayerBlocks").getBoolean(true) && blockPlaceHandler != null) {
-      blockPlaceHandler.stop();
       game.getEventManager().unregisterListeners(blockPlaceHandler);
       blockPlaceHandler = null;
+      blockLogger = null;
     }
   }
 
@@ -206,8 +207,9 @@ public class TreeDestroyage {
           try {
             config = c.getConfig().load();
             getLogger().info("Successfully migrated!");
-            if(!c.getConfigPath().toFile().delete()){
-              getLogger().error("Couldn't remove old file! Please use the treedestroyage/treedestroyage.conf file!");
+            if (!c.getConfigPath().toFile().delete()) {
+              getLogger().error(
+                  "Couldn't remove old file! Please use the treedestroyage/treedestroyage.conf file!");
             }
           } catch (IOException e) {
             getLogger().error("Unable to load config!", e);
@@ -332,4 +334,9 @@ public class TreeDestroyage {
   public ConfigurationLoader<CommentedConfigurationNode> getConfigManager() {
     return configManager;
   }
+
+  public BlockLogger getBlockLogger() {
+    return blockLogger;
+  }
+
 }
