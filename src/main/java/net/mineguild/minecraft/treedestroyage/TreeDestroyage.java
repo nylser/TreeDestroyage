@@ -103,8 +103,6 @@ public class TreeDestroyage {
     game.getEventManager().registerListeners(this, saplingHandler);
     BreakBlockHandler breakBlockHandler = injector.getInstance(BreakBlockHandler.class);
     game.getEventManager().registerListeners(this, breakBlockHandler);
-    blockLogger = injector.getInstance(BlockLogger.class);
-    game.getEventManager().registerListeners(this, blockLogger);
 
     loadConfig();
 
@@ -115,8 +113,10 @@ public class TreeDestroyage {
   public void onServerStart(GameStartingServerEvent event) {
     saplingHandler.activate();
 
-    //need to wait load worlds
+    // need to wait for worlds loaded
     if (config.getNode("logPlayerBlocks").getBoolean(true)) {
+      blockLogger = new BlockLogger(this);
+      game.getEventManager().registerListeners(this, blockLogger);
       blockPlaceHandler = new BlockPlaceHandler(this);
       game.getEventManager().registerListeners(this, blockPlaceHandler);
     }
