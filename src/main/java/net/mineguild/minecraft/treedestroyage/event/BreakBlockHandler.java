@@ -63,13 +63,15 @@ public class BreakBlockHandler {
         .isWood(transaction.getDefault().getLocation().get().sub(Vector3d.UP).createSnapshot());
 
     if (getConfig().getNode("baseOnly").getBoolean()) {
-        if (!isBase) {
-            return;
-        }
+      if (!isBase) {
+        return;
+      }
     }
 
-    if (plugin.getBlockPlaceHandler().placedBlocks.containsKey(breakEvent.getTransactions().get(0).getOriginal().getLocation().get())){
-      plugin.getBlockPlaceHandler().placedBlocks.remove(breakEvent.getTransactions().get(0).getOriginal().getLocation().get());
+    if (plugin.getBlockPlaceHandler().placedBlocks
+        .containsKey(breakEvent.getTransactions().get(0).getOriginal().getLocation().get())) {
+      plugin.getBlockPlaceHandler().placedBlocks
+          .remove(breakEvent.getTransactions().get(0).getOriginal().getLocation().get());
       plugin.getBlockPlaceHandler().SetSave();
       return;
     }
@@ -93,7 +95,8 @@ public class BreakBlockHandler {
             return;
           }
         }
-        TreeDetector dec = new TreeDetector(plugin, breakEvent.getTransactions().get(0).getOriginal(),
+        TreeDetector dec = new TreeDetector(plugin,
+            breakEvent.getTransactions().get(0).getOriginal(),
             maxAmount, getConfig());
         Vector3d playerPos = player.getLocation().getPosition();
         List<Transaction<BlockSnapshot>> transactions = new ArrayList<>(
@@ -208,8 +211,9 @@ public class BreakBlockHandler {
 
   private Location<World> findBase(Location<World> startLocation) {
     int limit = 0;
-    while (limit <= getConfig().getNode("maxBlocks").getInt(200) && !(startLocation.getBlockType() == BlockTypes.DIRT
-        || startLocation.getBlockType() == BlockTypes.GRASS)) {
+    while (limit <= getConfig().getNode("maxBlocks").getInt(200) && !(
+        startLocation.getBlockType() == BlockTypes.DIRT
+            || startLocation.getBlockType() == BlockTypes.GRASS)) {
       startLocation = startLocation.sub(Vector3d.UP);
       limit++;
     }
